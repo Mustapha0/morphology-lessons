@@ -4,29 +4,35 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<title>Understanding Morphology · Lessons</title>
-<link rel="stylesheet" href="assets/lesson.css">
+<title>Chapter N · Title · Understanding Morphology</title>
+<link rel="stylesheet" href="../assets/lesson.css">
 </head>
-<body class="scroll">
-<div class="wrap">
-  <h1>Understanding Morphology</h1>
-  <p class="sub">Animated, interactive lessons based on Haspelmath and Sims (2010). Pick a chapter.</p>
-  <div id="list"></div>
-  <p class="foot">Each chapter has animations, interactive widgets and a quiz. Turn on 🔊 inside a lesson for narration.</p>
-</div>
+<body>
+<script src="../assets/lesson.js"></script>
 <script>
-/* To add a chapter: copy chapter-template/ to chN/, then add one line here. */
-const CHAPTERS=[
-  {n:3,title:'Rules',href:'ch3/index.html',blurb:'Affixation, base modification, reduplication and conversion; morpheme-based vs word-based rules.'},
-  {n:4,title:'Lexicon',href:'ch4/index.html',blurb:'What speakers store: morphemes or word-forms? Economy, productivity, and the race between two routes of lexical access.'},
-  {n:5,title:'Inflection and derivation',href:'ch5/index.html',blurb:'Inflectional values and derivational meanings, eleven diagnostic criteria, dichotomy vs continuum, and split morphology.'}
+/* TEMPLATE. Copy this folder to chN/ and edit. Everything you need is in `Lesson`. */
+const {el,T,tl,R,S,chg,mark,shuffle,Stage,app,quizWidget,labWidget,sort3Widget}=Lesson;
+
+/* Tiles: T('bag','b') makes one tile per letter (ids b0,b1,b2). tl(id,text,kind,width,extra) makes one tile.
+   kinds: stem (blue) aff (yellow) mod (pink) copy (teal) var (violet) lex (dark) plain ghost bad ok op
+   extra: {enter:'right'} slides in, {from:'someId'} flies out of another tile, {sub:'N'} small badge.
+   A stage is S(row, row, ...). A row is R(tiles, 'label', [brackets]). Reuse ids between steps to animate. */
+
+const Q={
+  q1:{id:'q1',q:'Example question?',o:['Right answer','Wrong','Wrong','Wrong'],a:0,w:'Explanation shown after answering.'}
+};
+
+const SECTIONS=[
+ {title:'First section',steps:[
+  {type:'stage',cap:'A <b>stage</b> step: animated tiles plus a short caption.',spec:S(R(T('bag','b'),'base'))},
+  {type:'stage',cap:'Same ids, so the tiles stay and a new one slides in.',spec:S(R([...T('bag','b'),tl('s','s','aff',1,{enter:'right'})],'bag + s → bags'))},
+  {type:'quiz',cap:'Check yourself.',qs:[Q.q1]}
+ ]}
+ /* more sections: {title:'...',steps:[...]} */
+ /* widget step: {type:'widget',cap:'...',build:box=>labWidget(box,EXAMPLES)} where EXAMPLES=[{name,lang,desc,a:S(..),b:S(..)}] */
 ];
-const list=document.getElementById('list');
-CHAPTERS.forEach(c=>{
-  const a=document.createElement('a');a.className='chap'+(c.soon?' soon':'');a.href=c.href;
-  a.innerHTML=`<div class="n">${c.n}</div><div><h2>${c.title}</h2><p>${c.blurb}</p></div>`;
-  list.appendChild(a);
-});
+
+Lesson.start({label:'Chapter N · Title',sections:SECTIONS});
 </script>
 </body>
 </html>
