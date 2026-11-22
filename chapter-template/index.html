@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>Chapter N · Title · Understanding Morphology</title>
+<link rel="stylesheet" href="../assets/lesson.css">
+</head>
+<body>
+<script src="../assets/lesson.js"></script>
+<script>
+/* TEMPLATE. Copy this folder to chN/ and edit. Everything you need is in `Lesson`. */
+const {el,T,tl,R,S,chg,mark,shuffle,Stage,app,quizWidget,labWidget,sort3Widget}=Lesson;
+
+/* Tiles: T('bag','b') makes one tile per letter (ids b0,b1,b2). tl(id,text,kind,width,extra) makes one tile.
+   kinds: stem (blue) aff (yellow) mod (pink) copy (teal) var (violet) lex (dark) plain ghost bad ok op
+   extra: {enter:'right'} slides in, {from:'someId'} flies out of another tile, {sub:'N'} small badge.
+   A stage is S(row, row, ...). A row is R(tiles, 'label', [brackets]). Reuse ids between steps to animate. */
+
+const Q={
+  q1:{id:'q1',q:'Example question?',o:['Right answer','Wrong','Wrong','Wrong'],a:0,w:'Explanation shown after answering.'}
+};
+
+const SECTIONS=[
+ {title:'First section',steps:[
+  {type:'stage',cap:'A <b>stage</b> step: animated tiles plus a short caption.',spec:S(R(T('bag','b'),'base'))},
+  {type:'stage',cap:'Same ids, so the tiles stay and a new one slides in.',spec:S(R([...T('bag','b'),tl('s','s','aff',1,{enter:'right'})],'bag + s → bags'))},
+  {type:'quiz',cap:'Check yourself.',qs:[Q.q1]}
+ ]}
+ /* more sections: {title:'...',steps:[...]} */
+ /* widget step: {type:'widget',cap:'...',build:box=>labWidget(box,EXAMPLES)} where EXAMPLES=[{name,lang,desc,a:S(..),b:S(..)}] */
+];
+
+Lesson.start({label:'Chapter N · Title',sections:SECTIONS});
+</script>
+</body>
+</html>

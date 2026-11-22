@@ -1,0 +1,423 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>Chapter 3 · Rules · Understanding Morphology</title>
+<link rel="stylesheet" href="../assets/lesson.css">
+</head>
+<body>
+<script src="../assets/lesson.js"></script>
+<script>
+const {el,seg,T,tl,R,S,chg,mark,strip,shuffle,Stage,app,quizWidget,labWidget,sort3Widget}=Lesson;
+/* Affix builder */
+function affixWidget(box){
+  const AFF=[
+    {id:'un',t:'un-',pre:true,need:'A',not:'[— A]'},
+    {id:'non',t:'non-',pre:true,need:'N',not:'[— N]'},
+    {id:'able',t:'-able',pre:false,need:'V',not:'[V —]'},
+    {id:'ful',t:'-ful',pre:false,need:'N',not:'[N —]'}];
+  const BASE=[{t:'kind',c:'A'},{t:'intelligent',c:'A'},{t:'grass',c:'N'},{t:'achiever',c:'N'},{t:'wash',c:'V'},{t:'do',c:'V'}];
+  const NAME={A:'adjective',N:'noun',V:'verb'};
+  const ca=el('div','chips'),cb=el('div','chips'),host=el('div','stage'),res=el('div','res','Pick an affix and a base.');
+  box.append(el('p','gl','1 · Affix'),ca,el('p','gl','2 · Base'),cb,host,res);
+  const st=new Stage(host);let a=null,b=null,tm=null;
+  const ea=AFF.map((x,i)=>{const c=el('button','chip',x.t);c.onclick=()=>{a=x;sync();};ca.append(c);return c;});
+  const eb=BASE.map((x,i)=>{const c=el('button','chip',x.t);c.onclick=()=>{b=x;sync();};cb.append(c);return c;});
+  function sync(){
+    ea.forEach((c,i)=>c.classList.toggle('on',a===AFF[i]));eb.forEach((c,i)=>c.classList.toggle('on',b===BASE[i]));
+    if(!a||!b){return;}
+    clearTimeout(tm);
+    const aT=tl('af',a.t,'aff',a.t.length*0.55+.6),bT=tl('bs',b.t,'stem',b.t.length*.55+.7,{sub:b.c});
+    const sp=tl('sp','','sp',.8);
+    const apart=a.pre?[aT,sp,bT]:[bT,sp,aT];
+    st.set(S(R(apart,'the base is a '+NAME[b.c])));
+    const ok=(a.need===b.c);
+    tm=setTimeout(()=>{
+      if(ok){const joined=a.pre?[aT,bT]:[bT,aT];
+        st.set(S(R(joined,'possible word')));
+        const w=a.pre?(a.id==='non'?'non-':a.t.replace('-',''))+b.t:b.t+a.t.replace('-','');
+        res.className='res good';
+        res.innerHTML=`<span class="w">${w}</span> is a possible word. ${a.t} has the combinatory potential <b>${a.not}</b>, and ${b.t} is a ${NAME[b.c]}. <br><small>“Possible” is not the same as “already in use”: that question comes back in Chapter 6 (productivity).</small>`;
+      }else{
+        st.set(S(R([aT,sp,tl('x','✗','bad',1)],'no match')));
+        res.className='res bad';
+        let extra='';
+        if(a.id==='non'&&b.c==='A')extra=' (The book notes non- takes adjectives only reluctantly: *non-kind, ??non-intelligent.)';
+        else if(a.id==='un'&&b.c==='V')extra=' (Verbs like <i>undo</i> come from a different, reversing un-.)';
+        else if(a.id==='able'&&b.t==='intelligent')extra=' Hence *intelligentable.';
+        else if(a.id==='un'&&b.t==='grass')extra=' Hence *ungrass (7UP’s “uncola” broke this on purpose).';
+        res.innerHTML=`${a.t} needs <b>${a.not}</b>, but ${b.t} is a ${NAME[b.c]}.${extra}`;
+      }
+    },900);
+  }
+}
+
+/* Schema matcher */
+function schemaWidget(box){
+  const WORDS=[
+    ['bags',['b','æ','g','z'],true],['keys',['k','iː','z'],true],['gods',['g','ɑ','d','z'],true],['ribs',['r','ɪ','b','z'],true],
+    ['bones',['b','oʊ','n','z'],true],['gems',['dʒ','ɛ','m','z'],true],['cats',['k','æ','t','s'],false],['feet',['f','iː','t'],false]];
+  const host=el('div','stage'),chips=el('div','chips'),res=el('div','res','Tap a word to test it against the schema.');
+  box.append(el('p','gl','Schema: /Xz/ᴺ · ‘plurality of xs’'),chips,host,res);
+  const st=new Stage(host);
+  WORDS.forEach(([w,ph,ok],i)=>{
+    const c=el('button','chip',w);
+    c.onclick=()=>{[...chips.children].forEach(x=>x.classList.remove('on'));c.classList.add('on');c.classList.add('done');
+      const base=ph.map((p,j)=>tl('p'+j,p,'plain',Math.max(1,p.length*.6+.4)));
+      st.set(S(R(base,'/'+ph.join('')+'/')));
+      setTimeout(()=>{
+        if(ok){const body=base.slice(0,-1).map(t=>({...t,k:'stem'}));
+          st.set(S(R([tl('X','X','var',Math.max(1.6,body.length*.8)),{...base[base.length-1],k:'aff'}],'match: X = /'+ph.slice(0,-1).join('')+'/, then /z/')));
+          res.className='res good';res.innerHTML=`<span class="w">${w}</span> matches /Xz/ᴺ and is subsumed by the schema.`;}
+        else{st.set(S(R(base.map(t=>({...t,k:'bad'})),'no /z/ at the end')));
+          res.className='res bad';
+          res.innerHTML=w==='feet'?`<span class="w">feet</span> is a plural noun, but its sound shape does not fit the schema. It needs its own entry.`
+            :`<span class="w">cats</span> ends in /s/, not /z/, so this particular schema does not subsume it.`;}
+      },800);};
+    chips.append(c);});
+}
+
+/* Cross-formation table */
+function crossWidget(box){
+  const D=[['attract','attraction','attractive'],['suggest','suggestion','suggestive'],['prohibit','prohibition','prohibitive'],
+    ['elude',null,'elusive'],['insert','insertion',null],['discuss','discussion',null],[null,'illusion','illusive'],[null,'aggression','aggressive']];
+  const t=el('table','tb');t.innerHTML='<tr><th>verb</th><th>-ion noun</th><th>-ive adjective</th></tr>';
+  const res=el('div','res','Tap a row to see which rules link its words.');
+  D.forEach(r=>{const tr=el('tr','row');r.forEach(c=>tr.append(el('td',c?'':'gap',c||'—')));
+    tr.onclick=()=>{[...t.querySelectorAll('tr.row')].forEach(x=>x.classList.remove('on'));tr.classList.add('on');
+      const [v,n,a]=r;
+      if(v&&n&&a)res.innerHTML='All three words exist, so the two ordinary rules cover it: <b>/X/ᵥ ⇔ /Xion/ᴺ</b> and <b>/X/ᵥ ⇔ /Xive/ᴬ</b>.';
+      else if(!v)res.innerHTML=`No verb here, yet <i>${n}</i> and <i>${a}</i> are clearly related. The word-based model links them <b>directly</b> with <b>/Xion/ᴺ ⇔ /Xive/ᴬ</b>, a cross-formation. A morpheme-based analysis has to invent a root that never occurs on its own.`;
+      else res.innerHTML=`Only ${n||a} has a partner here: one of the ordinary verb rules links <i>${v}</i> to <i>${n||a}</i>. The gap is a missing word, not a failure of the rule.`;};
+    t.append(tr);});
+  box.append(t,res);
+}
+
+/* Pig Latin */
+function pigWidget(box){
+  const host=el('div','stage'),inp=el('input');inp.type='text';inp.value='star';inp.maxLength=9;inp.setAttribute('aria-label','Word');
+  inp.autocapitalize='off';inp.autocomplete='off';
+  const btn=el('button','btn','Move the sounds'),res=el('div','res');
+  box.append(host,el('div','chips'),res);box.children[1].append(inp,btn);
+  const st=new Stage(host);let tm=null;const V='aeiou';
+  function run(){
+    clearTimeout(tm);const w=(inp.value||'star').toLowerCase().replace(/[^a-z]/g,'')||'star';
+    const ls=w.split('');const base=ls.map((c,i)=>tl('L'+i,c,'stem'));
+    st.set(S(R(base,'English: '+w)));
+    let k=0;while(k<ls.length&&!V.includes(ls[k]))k++;
+    tm=setTimeout(()=>{
+      if(k===0){const add=['s','a','y'].map((c,i)=>tl('A'+i,c,'aff',1,{enter:'right'}));
+        st.set(S(R([...base,...add],'starts with a vowel: add “say”')));res.className='res good';
+        res.innerHTML=`<span class="w">${w}</span> → <span class="w">${w}say</span>`;}
+      else{const moved=base.slice(0,k).map(t=>({...t,k:'mod'})),rest=base.slice(k);
+        const add=['a','y'].map((c,i)=>tl('A'+i,c,'aff',1,{enter:'right'}));
+        st.set(S(R([...rest,...moved,...add],'consonants jump to the end, then “ay”')));res.className='res good';
+        res.innerHTML=`<span class="w">${w}</span> → <span class="w">${rest.map(t=>t.t).join('')+moved.map(t=>t.t).join('')}ay</span><br><small>The first sounds travel across the whole word. Metathesis in real languages only swaps neighbours, so no natural morphology is known to do this.</small>`;}
+    },900);
+  }
+  btn.onclick=run;inp.addEventListener('keydown',e=>{if(e.key==='Enter')run();});
+  requestAnimationFrame(run);
+}
+
+/* Compare */
+function compareWidget(box){
+  const D={
+    m:{n:'Morpheme-based',pts:[
+      'One kind of entry (morphemes) and one operation (concatenation). Very restrictive.',
+      'Explains directly why concatenation is the commonest pattern, and mirrors syntax: strings plus hierarchical structure.',
+      'Base modification and conversion need zero affixes and ad hoc allomorphy.',
+      'Back-formation and cross-formation are awkward.',
+      'Rules out Pig Latin-style long-distance moves automatically.']},
+    w:{n:'Word-based',pts:[
+      'Word-schemas related by correspondences. Any change (add, delete, shift, copy) can be a rule.',
+      'Handles non-concatenative patterns, back-formation and cross-formation naturally.',
+      'A “morpheme” is just one kind of schema, with no special status.',
+      'Not restrictive: it could describe patterns no language has.',
+      'Concatenation is common for historical reasons outside the model (free words fuse into affixes).']}};
+  const tabs=el('div','tabs'),body=el('div');
+  const tm=el('button','chip on','Morpheme-based'),tw=el('button','chip','Word-based');tabs.append(tm,tw);
+  const draw=k=>{tm.classList.toggle('on',k==='m');tw.classList.toggle('on',k==='w');
+    body.innerHTML='<ul class="pts">'+D[k].pts.map(p=>`<li>${p}</li>`).join('')+'</ul>';};
+  tm.onclick=()=>draw('m');tw.onclick=()=>draw('w');draw('m');
+  box.append(tabs,body,el('p','res','Neither model is simply better: it is a trade-off between <b>restrictiveness</b> and <b>empirical adequacy</b>. The book leans toward the word-based view if outside explanations cover the gap.'));
+}
+
+/* Sort: morphology or not */
+function sortWidget(box){
+  const ITEMS=[['unhappy',true,'un- + happy: a recurring bit of form and meaning shared with other words.'],
+    ['NATO',false,'An acronym. It makes a new word, but one that means the same as the longer name.'],
+    ['bags',true,'bag + -s: a regular morphological pattern.'],
+    ['fridge',false,'A clipping of refrigerator. Shorter, same meaning.'],
+    ['hammer (verb)',true,'Conversion from the noun hammer: morphological, even though the form does not change.'],
+    ['smog',false,'A blend of smoke and fog. A new word, outside morphology as the book defines it.'],
+    ['infotainment',false,'A blend of information and entertainment.']];
+  let i=0,right=0;const wrap=el('div');box.append(wrap);
+  function draw(){
+    wrap.innerHTML='';
+    if(i>=ITEMS.length){wrap.append(el('p','res good',`Done: <b>${right} of ${ITEMS.length}</b> correct.`));
+      const b=el('button','btn ghost','Try again');b.onclick=()=>{i=0;right=0;draw();};wrap.append(b);return;}
+    const [w,m,why]=ITEMS[i];
+    wrap.append(el('p','qn',`Word ${i+1} of ${ITEMS.length}`),el('p','qq',`<span style="font-family:var(--serif);font-size:24px">${w}</span>`));
+    const fb=el('p','fb');fb.hidden=true;const nx=el('button','btn','Next');nx.hidden=true;nx.onclick=()=>{i++;draw();};
+    const row=el('div','opts');let done=false;
+    [['Morphology',true],['Not morphology',false]].forEach(([l,v])=>{const b=el('button','opt',l);
+      b.onclick=()=>{if(done)return;done=true;const ok=v===m;if(ok)right++;b.classList.add(ok?'right':'wrong');
+        fb.innerHTML=(ok?'<b>Yes.</b> ':'<b>Not quite.</b> ')+why;fb.hidden=false;nx.hidden=false;};row.append(b);});
+    wrap.append(row,fb,nx);
+  }
+  draw();
+}
+
+/* Croatian lab */
+function croatianWidget(box){
+  const K=[['blog',1,'ovi'],['film',1,'ovi'],['park',1,'ovi'],['album',2,'i'],['papir',2,'i'],['razgovor',3,'i'],
+    ['golub',2,'ovi'],['jastreb',2,'ovi'],['cent',1,'i'],['dan',1,'i'],['gost',1,'i']];
+  const N=[['brag',1],['glik',1],['adret',2],['bakral',2],['mokilar',3]];
+  const rule=s=>s===1?'ovi':'i';
+  const host=el('div','stage'),chips=el('div','chips'),res=el('div','res','Rule: one-syllable nouns take <b>-ovi</b>, longer ones take <b>-i</b>. Tap a noun to test it.');
+  box.append(el('p','gl','Known nouns (singular → plural)'),chips,host,res);
+  const st=new Stage(host);
+  K.forEach(([w,s,a])=>{const c=el('button','chip',w);
+    c.onclick=()=>{[...chips.children].forEach(x=>x.classList.remove('on'));c.classList.add('on','done');
+      const p=rule(s),ok=p===a;
+      st.set(S(R([...T(w,'k'),tl('sfx','-'+p,'aff',1.8)],`rule predicts (${s} syllable${s>1?'s':''})`),
+               R([...T(w,'m'),tl('sfy','-'+a,ok?'aff':'mod',1.8)],'actual plural: '+w+a)));
+      res.className='res '+(ok?'good':'bad');
+      res.innerHTML=ok?`<span class="w">${w}${a}</span> follows the rule.`
+        :`<span class="w">${w}${a}</span> is an <b>exception</b> to the syllable rule. In the book’s data, over 93% of one-syllable nouns follow -ovi, so the rule still looks fundamentally right.`;};
+    chips.append(c);});
+  const n2=el('div','chips');box.append(el('p','gl','Made-up words (the book’s optional step 5): what plural would you expect?'),n2);
+  const out=el('div','res','Pick a made-up noun, then guess the plural.');
+  const guess=el('div','chips');
+  box.append(guess,out);
+  N.forEach(([w,s])=>{const c=el('button','chip',w);
+    c.onclick=()=>{[...n2.children].forEach(x=>x.classList.remove('on'));c.classList.add('on');guess.innerHTML='';
+      out.className='res';out.innerHTML=`<span class="w">${w}</span> has ${s} syllable${s>1?'s':''}. Which plural feels right?`;
+      ['ovi','i'].forEach(g=>{const b=el('button','chip','-'+g);
+        b.onclick=()=>{const p=rule(s);
+          out.className='res '+(g===p?'good':'bad');
+          out.innerHTML=`The rule predicts <span class="w">${w}${p}</span>. ${g===p?'Your guess matches it.':'Your guess differs, which is exactly the kind of result worth noting: do real speakers follow the rule or the exceptions?'}`;
+          st.set(S(R([...T(w,'z'),tl('zs','-'+p,'aff',1.8,{enter:'right'})],'rule prediction')));};
+        guess.append(b);});};
+    n2.append(c);});
+}
+
+/* Summary */
+function summaryWidget(box){
+  box.append(el('ul','pts',`
+   <li><b>Patterns:</b> affixation and compounding are concatenative; base modification, reduplication and conversion are not.</li>
+   <li><b>Combinatory potential</b> applies to every kind of rule, not just affixes.</li>
+   <li><b>Morpheme-based model:</b> restrictive and syntax-like, but needs zero affixes and ad hoc allomorphy.</li>
+   <li><b>Word-based model:</b> schemas and correspondences. Better empirical fit, less restrictive.</li>
+   <li><b>History</b> can explain why concatenation dominates: free words fuse far more often than sounds swap.</li>`));
+  const rows=[];let tot=0,good=0;
+  SECTIONS.forEach(s=>{let n=0,g=0;s.steps.forEach(st=>{if(st.type==='quiz')st.qs.forEach(q=>{n++;if(app.score[q.id])g++;});});
+    if(n){tot+=n;good+=g;rows.push(`<li>${s.title}: <b>${g}/${n}</b></li>`);}});
+  box.append(el('p','res',`<b>Quiz results (first try): ${good} of ${tot}</b><ul class="pts">${rows.join('')}</ul>`));
+}
+
+/* ---------- Content ---------- */
+const Q={
+ i1:{id:'i1',q:'If frequent words are stored in the lexicon, why do we still need morphological rules?',
+  o:['Stored words cannot be understood without rules','Speakers keep creating and understanding new complex words','The lexicon contains only roots','Rules are needed to retrieve stored words'],a:1,
+  w:'Rules cover the open-ended part of language: new words get built on the spot, and even stored words relate to their bases through the same patterns.'},
+ a1:{id:'a1',q:'The notation [V —] for -able says that…',o:['-able attaches after a verb base','-able is itself a verb','-able attaches to any word class','-able comes before its base'],a:0,
+  w:'The dash marks the affix and the V marks the class and position of the base: a suffix that selects verbs, as in washable.'},
+ a2:{id:'a2',q:'Un- and non- mean almost the same, yet they favour different bases. What does that show?',
+  o:['Meaning fully predicts which bases an affix takes','Combinatory potential must be stated separately for each affix','One of them is not a real morpheme','Prefixes ignore word class'],a:1,
+  w:'Combinatory potential cannot be read off the meaning, so it is part of what we specify about each affixation process.'},
+ b1:{id:'b1',q:'Murle nyoon → nyoo (plural) is an example of…',o:['Metathesis','Subtraction','Reduplication','Conversion'],a:1,w:'The last consonant is deleted, and that deletion signals the plural.'},
+ b2:{id:'b2',q:'In armik → armiq, what is the base?',o:['A suffix','armik, the element the operation applies to','armiq','There is no base without an affix'],a:1,
+  w:'The revised definition: the base is the element to which a morphological operation applies, so it works for non-concatenative patterns too.'},
+ b3:{id:'b3',q:'English díscount (noun) → discóunt (verb) is…',o:['Stress shift','Gemination','Suffixation','Subtraction'],a:0,w:'Nothing is added or removed; the stress moves.'},
+ r1:{id:'r1',q:'Somali buug → buugag and fool → foolal use -aC. What is such an element called?',
+  o:['A duplifix: a fixed vowel plus a copied consonant','A zero affix','A circumfix','Conversion'],a:0,w:'Part of it is copied from the base (the C) and part is fixed (the a).'},
+ r2:{id:'r2',q:'Which of these is conversion?',o:['hammer (noun) → hammer (verb)','smoke + fog → smog','refrigerator → fridge','NATO'],a:0,
+  w:'The form stays identical; only word class and meaning change. The other three are word-creation tricks the book places outside morphology.'},
+ m1:{id:'m1',q:'Why is a zero plural affix for armik/armiq seen as unsatisfying?',
+  o:['Zero affixes are impossible in every language','It must be given the power to trigger palatalization, and nothing motivates that','It cannot be pronounced','It contradicts hierarchical structure'],a:1,
+  w:'It is an ad hoc device, and a language with several base-modification patterns would need a different zero affix for each.'},
+ m2:{id:'m2',q:'In undoable, the reading ‘unable to be done’ groups the parts as…',o:['[un-do]-able','un-[do-able]','[un-able] do','no grouping at all'],a:1,
+  w:'Do and -able form a constituent first (doable), and un- negates the result.'},
+ w1:{id:'w1',q:'Which word does NOT match the schema /Xz/ᴺ ‘plurality of xs’?',o:['bags','keys','feet','bones'],a:2,w:'Feet has no final /z/, so its sound shape does not match.'},
+ w2:{id:'w2',q:'In the word-based model, a “morpheme” is…',o:['The only basic unit','Just one kind of schema, with no special status','Not allowed','Always a zero form'],a:1,w:'The word is the basic unit; a morpheme is a convenient name for a schema that pairs a segmentable sound with a meaning.'},
+ x1:{id:'x1',q:'Why is the verb babysit (from babysitter) a problem for the morpheme-based model?',
+  o:['Compounds are built from component lexemes, not derived from other compounds','Babysit has no meaning','-er is not a suffix','English forbids verbs from nouns'],a:0,
+  w:'English has no productive noun + verb compounding (*bookread), so babysit can only come from babysitter, which the directionless correspondence allows.'},
+ x2:{id:'x2',q:'Illusion and illusive exist, but *illude does not. Which rule links the pair directly?',
+  o:['/Xion/ᴺ ⇔ /Xive/ᴬ','/X/ᵥ ⇔ /Xion/ᴺ only','Zero affixation','Metathesis'],a:0,w:'A cross-formation: both schemas contain a constant piece, so no verb root is needed.'},
+ t1:{id:'t1',q:'Pig Latin-style moves (star → arstay) are used to argue that…',
+  o:['The word-based model is too flexible, not restrictive enough','The morpheme-based model is wrong','Reduplication does not exist','Rules should never be formalised'],a:0,
+  w:'Nothing in the word-based model forbids long-distance rearranging, though no natural language seems to do it.'},
+ t2:{id:'t2',q:'A word-based explanation for the commonness of concatenation is…',
+  o:['Rules can only concatenate','Language history offers many more sources for concatenation than for other patterns','Concatenation is easier to pronounce','Syntax forbids the others'],a:1,
+  w:'Free words fusing into affixes (grammaticalization) happens constantly; swapping sounds almost never arises from sound change.'},
+ p1:{id:'p1',q:'Yimas manpa → manpawi ‘crocodile(s)’',o:['Suffixation','Reduplication','Vowel change','Subtraction'],a:0,w:'-wi is added after the base.'},
+ p2:{id:'p2',q:'Coptic koːt ‘build’ → keːt ‘be built’',o:['Prefixation','Base modification (vowel change)','Conversion','Metathesis'],a:1,w:'Only the vowel quality changes.'},
+ p3:{id:'p3',q:'Hausa búgàa → búbbùgáa ‘beat many times’',o:['Reduplication combined with tone change','Only tone change','Only suffixation','Conversion'],a:0,w:'Part of the base is copied, and the tones change as well.'},
+ p4:{id:'p4',q:'German finden → gefunden',o:['Prefix ge- plus a vowel change','Only a vowel change','Only conversion','Subtraction'],a:0,w:'Two operations at once: the prefix ge- and the stem vowel i → u.'},
+ p5:{id:'p5',q:'Tagalog búhay ‘life’ → buháy ‘alive’ (and gútom/gutóm, tákot/takót)',o:['Stress shift','Gemination','Subtraction','Prefixation'],a:0,w:'The same sounds, with stress moving to the last syllable. Noun becomes adjective.'},
+ p6:{id:'p6',q:'Which cross-formation rule covers astronomy–astronomer, philosophy–philosopher, ethnography–ethnographer?',
+  o:['/Xy/ᴺ ⇔ /Xer/ᴺ','/X/ᴺ ⇔ /Xer/ᴺ','/XC/ᴺ ⇔ /XCaC/ᴺ','/Xer/ᴺ ⇔ /Xion/ᴺ'],a:0,w:'Both schemas keep a constant piece (-y and -er), and X is astronom-, philosoph-, ethnograph-.'},
+ p7:{id:'p7',q:'French plat/platte: why is “subtract the final consonant” an attractive analysis of the masculine?',
+  o:['The masculine’s missing consonant is unpredictable, but the feminine shows it, so deleting is easier than guessing what to add','French has no suffixes','Feminine forms are always shorter','Subtraction is the commonest pattern'],a:0,
+  w:'This reasoning is the standard argument, not spelled out in the chapter. From the masculine pla you cannot tell whether to add t, d, g or z, but from platte you can simply drop the consonant.'}
+};
+
+const SECTIONS=[
+{title:'Words as processes',steps:[
+ {type:'stage',cap:`Linguists often talk about complex words as if they were <b>built by a process</b>: start with a <b>base</b>, then something gets attached to it.`,spec:S(R(T('bag','b'),'base'))},
+ {type:'stage',cap:`Attach <b>-s</b> to bag and you <b>derive</b> bags. “Attaching” and “deriving” are handy ways of describing a pattern in form and meaning. Inflection gets the same wording: warmer is derived from warm.`,
+  spec:S(R([...T('bag','b'),tl('s1','s','aff',1,{enter:'right'})],'bag + s → bags'))},
+ {type:'stage',cap:`Frequent words are probably <b>stored whole</b> in the lexicon, the mental dictionary, and simply retrieved. No building needed.`,
+  spec:S(R([tl('lx','bags','lex',3.4,{from:'b0'})],'in the lexicon: retrieved, not built'))},
+ {type:'stage',cap:`But speakers coin and understand brand-new words all the time. That takes <b>rules</b>, and this chapter is about what they look like.`,
+  spec:S(R([...T('google','g'),tl('able','-able','aff',2.4,{enter:'right'})],'a new word, built on the spot'))},
+ {type:'quiz',cap:'Quick check.',qs:[Q.i1]}
+]},
+{title:'Affixation and compounding',steps:[
+ {type:'stage',cap:`The tidy cases are <b>concatenative</b>: morphemes sit one after another, as prefix + base, base + suffix, or two stems in a <b>compound</b>. Everything else is non-concatenative.`,
+  spec:S(R([tl('p1','un-','aff',1.7),tl('p2','happy','stem',2.8)],'prefixation'),R([tl('q1','bag','stem',2),tl('q2','-s','aff',1.3)],'suffixation'),R([tl('r1','cheese','stem',3),tl('r2','board','stem',2.8)],'compounding'))},
+ {type:'stage',cap:`An affixation rule also says <b>which bases it accepts</b>: its <b>combinatory potential</b>. The dash stands for the affix; the letter is the base class and shows which side it sits on.`,
+  spec:S(R([tl('n1','un-','aff',1.7),tl('n2','[— A]','plain',2.3)],'prefix, adjective base'),R([tl('o1','-able','aff',2),tl('o2','[V —]','plain',2.3)],'suffix, verb base'),
+         R([tl('m1','-er','aff',1.7),tl('m2','[A —]','plain',2.3)],'comparative -er'),R([tl('l1','-ful','aff',1.7),tl('l2','[N —]','plain',2.3)],'suffix, noun base'))},
+ {type:'widget',cap:`Try combining. Pick an affix, then a base, and see whether the rule lets them join.`,build:affixWidget},
+ {type:'quiz',cap:'Two quick checks.',qs:[Q.a1,Q.a2]}
+]},
+{title:'Base modification',steps:[
+ {type:'stage',cap:`Not every pattern <b>adds</b> something. German forms some plurals by fronting the stem vowel. ‘Plural’ goes with a change of vowel quality, yet you cannot cut the word into two morphemes. The book therefore uses the wider term <b>morphological pattern</b>.`,
+  spec:S(R(T('Mutter','g'),'singular · mother'),R(mark(chg(T('Mütter','h'),{1:'ü'}),[1]),'plural · mothers'))},
+ {type:'stage',cap:`Armik → armiq (Albanian: ‘enemy’ → ‘enemies’). The final consonant is palatalized, with nothing attached. So what is the “base” now?`,
+  spec:S(R(mark(T('armik','a'),[4],'stem'),'armik · singular'))},
+ {type:'stage',cap:`The old definition (“what an affix attaches to”) no longer fits, so the book redefines it: the <b>base</b> is the element to which a morphological <b>operation</b> applies.`,
+  spec:S(R(chg(T('armik','a'),{4:'q'}),'armiq · plural: the operation changed the base'))},
+ {type:'widget',cap:`Here is a gallery of <b>base modification</b>: sounds can be changed, weakened, lengthened, shortened, deleted or swapped. Tap an example and watch the operation.`,build:b=>labWidget(b,BASE_EX)},
+ {type:'quiz',cap:'Check yourself.',qs:[Q.b1,Q.b2,Q.b3]}
+]},
+{title:'Reduplication and conversion',steps:[
+ {type:'widget',cap:`<b>Reduplication</b> copies part or all of the base. Teal tiles are copies, yellow tiles are fixed material. Tap an example.`,build:b=>labWidget(b,RED_EX)},
+ {type:'stage',cap:`Many linguists treat reduplication as affixing a <b>template</b>. In Ponapean the template is CV-: two empty slots in front of the base.`,
+  spec:S(R([tl('C','C','ghost',1),tl('V','V','ghost',1),...T('duhp','d')],'template CV- + base duhp ‘dive’'))},
+ {type:'stage',cap:`Then the slots are filled by copying from the base. Attaching the template is ordinary concatenation; the copying is less clearly so, and looks more like lengthening.`,
+  spec:S(R([tl('C','d','copy',1,{from:'d0'}),tl('V','u','copy',1,{from:'d1'}),...T('duhp','d')],'duduhp · ‘be diving’'))},
+ {type:'stage',cap:`<b>Conversion</b> is the limiting case: the form does not change at all. Only word class and meaning do. Here hammer starts as a noun…`,
+  spec:S(R([tl('cl','N','var',1),...T('hammer','h')],'noun: a tool'))},
+ {type:'stage',cap:`…and becomes a verb meaning ‘use a hammer’. Since there is no form difference, conversion stretches our original definition of morphological structure.`,
+  spec:S(R([tl('cl','V','var',1),...T('hammer','h')],'verb: use the tool'))},
+ {type:'widget',cap:`Some word-creation tricks are <b>outside</b> morphology: the new word means the same as the longer one. Sort these.`,build:sortWidget},
+ {type:'quiz',cap:'Check yourself.',qs:[Q.r1,Q.r2]}
+]},
+{title:'Morpheme-based model',steps:[
+ {type:'stage',cap:`Two approaches to rules. The <b>morpheme-based</b> model treats word building like syntax: rules combine morphemes the way phrase-structure rules combine words.`,
+  spec:S(R([tl('mb','morpheme-based','stem',6.2)],'concatenation only, syntax-like'))},
+ {type:'stage',cap:`Word-structure rules rewrite one symbol at a time. Start with a <b>word-form</b>…`,spec:S(R([tl('wf','word-form','stem',4.6)],'derive “unhappier”'))},
+ {type:'stage',cap:`…which is a stem plus an inflectional suffix.`,spec:S(R([tl('wf','stem','stem',3,{from:'wf'}),tl('in','infl. suffix','stem',4.2,{from:'wf'})],'word-form → stem + inflectional suffix'))},
+ {type:'stage',cap:`The stem is a derivational prefix plus a root.`,spec:S(R([tl('wf','deriv. prefix','stem',4.2),tl('rt','root','stem',2.2,{from:'wf'}),tl('in','infl. suffix','stem',4)],'stem → derivational prefix + root'))},
+ {type:'stage',cap:`Finally, the symbols are replaced by real morphemes: un-, happy, -er.`,spec:S(R([tl('wf','un-','aff',2),tl('rt','happi','stem',3),tl('in','-er','aff',2)],'unhappier'))},
+ {type:'stage',cap:`Morphology also has hierarchy. <b>Undoable</b> is ambiguous. If do and -able group first, it means ‘unable to be done’.`,
+  spec:S(R([tl('u','un-','aff',1.8),tl('d','do','stem',1.6),tl('a','-able','aff',2.2)],'undoable',[{id:'g',from:1,to:2,label:'unable to be done'}]))},
+ {type:'stage',cap:`If un- and do group first, it means ‘able to be undone’. Same string, two structures, just as in syntax.`,
+  spec:S(R([tl('u','un-','aff',1.8),tl('d','do','stem',1.6),tl('a','-able','aff',2.2)],'undoable',[{id:'g',from:0,to:1,label:'able to be undone'}]))},
+ {type:'stage',cap:`The weak spot: base modification. To keep concatenation-only, the model says armik takes a <b>zero affix</b> meaning ‘plural’…`,
+  spec:S(R([...T('armik','z'),tl('zz','Ø','ghost',1.2,{enter:'right'})],'armik + Ø (plural)'))},
+ {type:'stage',cap:`…and that invisible suffix must <b>cause</b> the palatalization. Nothing motivates this, and every other pattern would need its own zero affix. It is an ad hoc device.`,
+  spec:S(R([...chg(T('armik','z'),{4:'q'}),tl('zz','Ø','ghost',1.2)],'armiq: but why would Ø do that?'))},
+ {type:'quiz',cap:'Check yourself.',qs:[Q.m2,Q.m1]}
+]},
+{title:'Word-based model',steps:[
+ {type:'stage',cap:`The <b>word-based</b> model starts from whole words. These plurals have something in common…`,
+  spec:S(R([...T('bag','a'),tl('as','s','aff')],''),R([...T('key','b'),tl('bs','s','aff')],''),R([...T('god','c'),tl('cs','s','aff')],''),R([...T('rib','d'),tl('ds','s','aff')],''))},
+ {type:'stage',cap:`The shared part becomes a <b>word-schema</b>: X stands for whatever varies, /z/ is constant, all are nouns meaning ‘plurality of xs’. Words <b>match</b> a schema, and the schema <b>subsumes</b> them.`,
+  spec:S(R([tl('X','X','var',1.4,{sub:'N'}),tl('as','z','aff',1,{})],'/Xz/ᴺ · ‘plurality of xs’'))},
+ {type:'widget',cap:`Test words against the schema. Not every plural noun matches.`,build:schemaWidget},
+ {type:'stage',cap:`A rule is then a <b>correspondence</b> between two schemas: for any noun matching the left one, there is a word matching the right one. Requiring N on the left is the combinatory potential.`,
+  spec:S(R([tl('L','X','var',1.2,{sub:'N'}),tl('op','⇔','op',1),tl('R','X','var',1.2,{sub:'N'}),tl('Z','z','aff',1,{enter:'right'})],'/X/ᴺ ⇔ /Xz/ᴺ'))},
+ {type:'stage',cap:`Conversion falls out naturally: nothing changes in sound, only class and meaning.`,
+  spec:S(R([tl('L','X','var',1.2,{sub:'N'}),tl('op','⇔','op',1),tl('R','X','var',1.2,{sub:'V'})],'/X/ᴺ ⇔ /X/ᵥ · instrument ⇔ use the instrument'))},
+ {type:'stage',cap:`Base modification too. Hindi/Urdu shortening links a transitive verb with a long vowel to an intransitive one: maːr ‘kill’, mar ‘die’.`,
+  spec:S(R([tl('x1','X','var',1),tl('v1','Vː','mod',1.4),tl('y1','Y','var',1)],'/XVːY/ᵥ · ‘A causes B to happen’'),R([tl('x2','X','var',1),tl('v2','V','mod',1.4),tl('y2','Y','var',1)],'/XVY/ᵥ · ‘B happens’'))},
+ {type:'quiz',cap:'Check yourself.',qs:[Q.w1,Q.w2]}
+]},
+{title:'Where word-based wins',steps:[
+ {type:'stage',cap:`<b>Back-formation.</b> Babysitter matches two schemas at once: the noun + noun compound, and the verb + -er agent noun.`,
+  spec:S(R([tl('b','baby','stem',2.6),tl('s','sit','stem',1.8),tl('e','er','aff',1.3)],'babysitter'))},
+ {type:'stage',cap:`The agent-noun correspondence has a <b>double arrow</b>: it is not directed. So the language can run it backwards and drop -er, giving the verb <b>babysit</b>.`,
+  spec:S(R([tl('b','baby','stem',2.6),tl('s','sit','stem',1.8),tl('c','V','var',1)],'babysit (verb), back-formed'))},
+ {type:'stage',cap:`English has no productive noun + verb compounding, so a morpheme-based model cannot build these directly. A directionless correspondence explains how babysit arose.`,
+  spec:S(R([tl('x1','*bookread','bad',5)],'not formed by any rule'),R([tl('x2','*truckdrive','bad',5)],''),R([tl('x3','babysit','ok',5)],'but this exists'))},
+ {type:'widget',cap:`<b>Cross-formation.</b> Even some concatenative patterns work better as direct links between words. Tap the rows.`,build:crossWidget},
+ {type:'stage',cap:`Compounds show cross-formation too. Seaman is not “any man connected with the sea”: it names a low-ranking naval member.`,
+  spec:S(R([tl('S','sea','stem',2),tl('M','man','stem',2)],'seaman · low-ranking navy member'))},
+ {type:'stage',cap:`Airman parallels it for the air force. The most natural analysis is a rule <b>/seaX/ ⇔ /airX/</b> linking the two words directly.`,
+  spec:S(R([tl('S','air','mod',2),tl('M','man','stem',2)],'airman · low-ranking air force member'))},
+ {type:'quiz',cap:'Check yourself.',qs:[Q.x1,Q.x2]}
+]},
+{title:'Restrictive or adequate?',steps:[
+ {type:'widget',cap:`The word-based model allows rules of any type. The language game <b>Pig Latin</b> shows the cost: consonants jump from the front to the end of the word. Try your own.`,build:pigWidget},
+ {type:'widget',cap:`Two models, two sets of strengths. Compare them.`,build:compareWidget},
+ {type:'stage',cap:`Why are concatenative patterns so common anyway? Largely <b>history</b>. Spanish cantaré began as two free words, cantare habeo, ‘I have to sing’.`,
+  spec:S(R([tl('c','cantare','stem',3.4),tl('h','habeo','aff',2.4)],'free words'))},
+ {type:'stage',cap:`The meaning shifted from obligation to future, the infinitive lost its final -e, and the auxiliary was shortened and stuck to the verb.`,
+  spec:S(R([tl('c','cantar','stem',3),tl('h','he','aff',1.4)],'reduced'))},
+ {type:'stage',cap:`They then fused into one word: <b>cantaré</b>, ‘I will sing’. Such grammaticalization is extremely common, which is why concatenation dominates.`,
+  spec:S(R([tl('c','canta','stem',3,{}),tl('h','ré','aff',1.6)],'one word: ‘I will sing’'))},
+ {type:'stage',cap:`Non-concatenative patterns often begin as sound changes instead. The English verb house once had a suffix, so its s sat between vowels.`,
+  spec:S(R(T('house','n'),'noun: s is word-final'),R([...T('hous','v'),tl('ve','en','aff',1.6)],'old verb: s between vowels'))},
+ {type:'stage',cap:`Between vowels, s became z. Then the suffix wore away…`,
+  spec:S(R(T('house','n'),'noun: s is word-final'),R([...chg(T('hous','v'),{3:'z'}),tl('ve','en','aff',1.6)],'voicing between vowels'))},
+ {type:'stage',cap:`…leaving voicing as the <b>only</b> difference between noun and verb. Plenty of chances for free words to fuse; far fewer for sounds to swap. That is a system-external explanation for what the morpheme model builds into its architecture.`,
+  spec:S(R(T('house','n'),'noun: /haʊs/'),R(chg(T('house','v'),{3:'z'}),'verb: /haʊz/'))},
+ {type:'quiz',cap:'Check yourself.',qs:[Q.t1,Q.t2]}
+]},
+{title:'Exercises and Croatian lab',steps:[
+ {type:'quiz',cap:`The chapter’s comprehension exercises, as quick questions. Name the operation, or the rule.`,qs:[Q.p1,Q.p2,Q.p3,Q.p4,Q.p5,Q.p6,Q.p7]},
+ {type:'widget',cap:`The exploratory exercise: do rules ever fail? In Croatian, masculine hard-stem nouns follow a syllable-count rule, with exceptions.`,build:croatianWidget},
+ {type:'widget',cap:`That is chapter 3. Here is what to take away.`,build:summaryWidget}
+]}
+];
+
+/* examples (defined after helpers) */
+const sepT=(id)=>tl(id,'-','op',.5);
+var BASE_EX=[
+ {name:'German',lang:'Vowel fronting · plural',desc:'<span class="w">Mutter → Mütter</span> ‘mother(s)’. Also Vater → Väter, Garten → Gärten. A back vowel becomes a front vowel.',
+  a:S(R(T('Mutter','g'),'singular')),b:S(R(chg(T('Mutter','g'),{1:'ü'}),'plural'))},
+ {name:'Albanian',lang:'Palatalization · plural',desc:'<span class="w">armik → armiq</span> ‘enemy/enemies’. Final [k] becomes [c], [g] becomes [ɟ].',
+  a:S(R(T('armik','a'),'singular')),b:S(R(chg(T('armik','a'),{4:'q'}),'plural'))},
+ {name:'Gaelic',lang:'Weakening · genitive plural',desc:'<span class="w">ceann → cheann</span> ‘head’. An initial stop becomes a fricative.',
+  a:S(R(T('ceann','c'),'nominative singular')),b:S(R(chg(T('ceann','c'),{0:'ch'}),'genitive plural'))},
+ {name:'Arabic',lang:'Gemination · causative',desc:'<span class="w">darasa → darrasa</span> ‘learn’ → ‘teach’. The second root consonant is lengthened.',
+  a:S(R(T('darasa','d'),'learn')),b:S(R([...T('darasa','d').slice(0,3),tl('dx','r','mod',1,{from:'d2'}),...T('darasa','d').slice(3)],'teach'))},
+ {name:'Hindi',lang:'Shortening · transitive → intransitive',desc:'<span class="w">maːr → mar</span> ‘kill’ → ‘die’. The long vowel becomes short.',
+  a:S(R(mark(T('maːr','h'),[1,2]),'kill')),b:S(R([T('maːr','h')[0],{...T('maːr','h')[1],k:'mod'},T('maːr','h')[3]],'die'))},
+ {name:'English stress',lang:'Stress shift · noun → verb',desc:'<span class="w">díscount → discóunt</span>. Same segments; the stressed syllable moves.',
+  a:S(R(chg(T('discount','s'),{1:'í'}),'noun')),b:S(R(chg(T('discount','s'),{4:'ó'}),'verb'))},
+ {name:'English voicing',lang:'Voicing · noun → verb',desc:'<span class="w">house /haʊs/ → house /haʊz/</span>. Also thief → thieve, wreath → wreathe.',
+  a:S(R(['h','a','ʊ','s'].map((c,i)=>tl('v'+i,c,i===3?'mod':'stem')),'noun')),b:S(R(['h','a','ʊ','z'].map((c,i)=>tl('v'+i,c,i===3?'mod':'stem')),'verb'))},
+ {name:'Murle',lang:'Subtraction · plural',desc:'<span class="w">nyoon → nyoo</span> ‘lamb(s)’. The last consonant is deleted.',
+  a:S(R(mark(T('nyoon','m'),[4]),'singular')),b:S(R(T('nyoon','m').slice(0,4),'plural'))},
+ {name:'Clallam',lang:'Metathesis · actual vs non-actual',desc:'<span class="w">qq’í- → qíq’-</span> ‘restrain’. Two <b>neighbouring</b> sounds swap places.',
+  a:S(R([tl('c0','q'),tl('c1','q’','stem',1.2),tl('c2','í')],'non-actual')),b:S(R([tl('c0','q'),tl('c2','í','mod'),tl('c1','q’','mod',1.2)],'actual'))},
+ {name:'Mixtec',lang:'Tone change · noun → adjective',desc:'<span class="w">káʔba → káʔbá</span> ‘filth’ → ‘dirty’. The tone pattern changes to high–high, and only nouns qualify: combinatory potential again.',
+  a:S(R(T('káʔba','x'),'noun')),b:S(R(chg(T('káʔba','x'),{4:'á'}),'adjective'))}
+];
+var RED_EX=[
+ {name:'Malagasy',lang:'Full reduplication · ‘fairly …’',desc:'<span class="w">maimbo → maimbo-maimbo</span> ‘stinky’ → ‘somewhat stinky’. The whole base is copied.',
+  a:S(R(T('maimbo','m'),'base')),b:S(R([...T('maimbo','m'),sepT('sp'),...T('maimbo','n','copy').map((t,i)=>({...t,from:'m'+i}))],'reduplicated'))},
+ {name:'Ponapean',lang:'CV- prefix · ‘be …ing’',desc:'<span class="w">duhp → du-duhp</span> ‘dive’ → ‘be diving’. A consonant + vowel is copied in front.',
+  a:S(R(T('duhp','d'),'base')),b:S(R([tl('c0','d','copy',1,{from:'d0'}),tl('c1','u','copy',1,{from:'d1'}),sepT('sp'),...T('duhp','d')],'reduplicated'))},
+ {name:'Mangap-Mbula',lang:'-VC suffix · ‘be …ing’',desc:'<span class="w">kuk → kuk-uk</span> ‘bark’ → ‘be barking’. A vowel + consonant is copied after.',
+  a:S(R(T('kuk','k'),'base')),b:S(R([...T('kuk','k'),sepT('sp'),tl('c0','u','copy',1,{from:'k1'}),tl('c1','k','copy',1,{from:'k2'})],'reduplicated'))},
+ {name:'Somali',lang:'Duplifix -aC · plural',desc:'<span class="w">buug → buug-ag</span> ‘book(s)’. The suffix mixes a fixed <b>a</b> with a copied final consonant.',
+  a:S(R(T('buug','b'),'singular')),b:S(R([...T('buug','b'),sepT('sp'),tl('f','a','aff',1,{enter:'right'}),tl('c','g','copy',1,{from:'b3'})],'plural'))},
+ {name:'Tzutujil',lang:'Duplifix -Coj · ‘sort of …’',desc:'<span class="w">saq → saq-soj</span> ‘white’ → ‘whitish’. A copied first consonant plus fixed <b>oj</b>.',
+  a:S(R(T('saq','s'),'base')),b:S(R([...T('saq','s'),sepT('sp'),tl('c','s','copy',1,{from:'s0'}),tl('f','oj','aff',1.6,{enter:'right'})],'‘whitish’'))}
+];
+
+
+Lesson.start({label:'Chapter 3 · Rules',sections:SECTIONS});
+
+</script>
+</body>
+</html>

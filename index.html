@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>Understanding Morphology · Lessons</title>
+<link rel="stylesheet" href="assets/lesson.css">
+</head>
+<body class="scroll">
+<div class="wrap">
+  <h1>Understanding Morphology</h1>
+  <p class="sub">Animated, interactive lessons based on Haspelmath and Sims (2010). Pick a chapter.</p>
+  <div id="list"></div>
+  <p class="foot">Each chapter has animations, interactive widgets and a quiz. Turn on 🔊 inside a lesson for narration.</p>
+</div>
+<script>
+/* To add a chapter: copy chapter-template/ to chN/, then add one line here. */
+const CHAPTERS=[
+  {n:3,title:'Rules',href:'ch3/index.html',blurb:'Affixation, base modification, reduplication and conversion; morpheme-based vs word-based rules.'},
+  {n:4,title:'Lexicon',href:'ch4/index.html',blurb:'What speakers store: morphemes or word-forms? Economy, productivity, and the race between two routes of lexical access.'}
+];
+const list=document.getElementById('list');
+CHAPTERS.forEach(c=>{
+  const a=document.createElement('a');a.className='chap'+(c.soon?' soon':'');a.href=c.href;
+  a.innerHTML=`<div class="n">${c.n}</div><div><h2>${c.title}</h2><p>${c.blurb}</p></div>`;
+  list.appendChild(a);
+});
+</script>
+</body>
+</html>

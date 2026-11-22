@@ -1,0 +1,286 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>Chapter 4 · Lexicon · Understanding Morphology</title>
+<link rel="stylesheet" href="../assets/lesson.css">
+</head>
+<body>
+<script src="../assets/lesson.js"></script>
+<script>
+const {el,seg,T,tl,R,S,chg,mark,strip,shuffle,Stage,app,quizWidget,labWidget,sort3Widget}=Lesson;
+/* Storage economy: Greek nouns */
+function econWidget(box){
+  const L=['fíl-','kósm-','fóv-','gám-','skíl-'],NM=['filos','kosmos','fovos','gamos','skilos'];
+  const SUF=['-os','-o','-u','-i','-us','-on'];let n=1;
+  const t=el('table','tb');
+  t.innerHTML='<tr><th>filos ‘friend’</th><th>singular</th><th>plural</th></tr><tr><td>nominative</td><td>fílos</td><td>fíli</td></tr><tr><td>accusative</td><td>fílo</td><td>fílus</td></tr><tr><td>genitive</td><td>fílu</td><td>fílon</td></tr>';
+  const chips=el('div','chips'),b1=el('button','chip','+ add a noun like it'),b0=el('button','chip','Reset');chips.append(b1,b0);
+  const bars=el('div');
+  const mk=(lab,cls)=>{const r=el('div','ebar');r.innerHTML=`<span class="bl">${lab}</span><div class="bt"><i class="${cls}"></i></div><b>0</b>`;return r;};
+  const rw=mk('Word-form lexicon','wf'),rm=mk('Morpheme lexicon','mo');bars.append(rw,rm);
+  const info=el('div','res');
+  box.append(t,chips,bars,info);
+  function draw(){
+    const w=6*n,m=n+6;
+    rw.querySelector('i').style.width=(w/30*100)+'%';rm.querySelector('i').style.width=(m/30*100)+'%';
+    rw.querySelector('b').textContent=w;rm.querySelector('b').textContent=m;
+    info.className='res '+(m<w?'good':'');
+    info.innerHTML=`<b>${n}</b> noun${n>1?'s':''}: ${NM.slice(0,n).join(', ')}.<br>Morphemes stored: ${L.slice(0,n).join(' ')} · ${SUF.join(' ')}<br>`+
+      (n===1?'With one noun, listing the six word-forms (6) is even cheaper than storing seven morphemes (7).':
+       n<5?'The six suffixes are shared, so each new noun adds one stem instead of six forms.':
+       'Five nouns: 30 word-forms against 11 morphemes. Multiply by thousands of nouns and verbs and the morpheme lexicon looks far more economical.');
+    b1.disabled=n>=5;
+  }
+  b1.onclick=()=>{if(n<5){n++;draw();}};b0.onclick=()=>{n=1;draw();};draw();
+}
+
+/* -al: stored or built? */
+function alWidget(box){
+  const D=[['arrive','arrival',1],['refuse','refusal',1],['deny','denial',1],['revive','revival',1],['betray','betrayal',1],['bestow','bestowal',1],
+    ['repair','*repairal',0],['ignore','*ignoral',0],['amuse','*amusal',0],['debug','*debuggal',0]];
+  const host=el('div','stage'),chips=el('div','chips'),res=el('div','res','Tap a verb and try adding -al.');
+  box.append(chips,host,res);const st=new Stage(host);let tm=null;
+  D.forEach(([v,w,ok])=>{const c=el('button','chip',v);
+    c.onclick=()=>{clearTimeout(tm);[...chips.children].forEach(x=>x.classList.remove('on'));c.classList.add('on','done');
+      const vt=tl('v',v,'stem',v.length*.55+.7),at=tl('a','-al','aff',1.6,{enter:'right'});
+      st.set(S(R([vt,at],'try the suffix')));
+      tm=setTimeout(()=>{
+        if(ok){st.set(S(R([tl('w',w,'lex',w.length*.6+.8,{from:'v'})],'a stored noun')));
+          res.className='res good';res.innerHTML=`<span class="w">${w}</span> exists, but nothing in the verb predicts it. It sits in the lexicon next to ${v}.`;}
+        else{st.set(S(R([tl('w',w,'bad',w.length*.6+.8,{from:'v'})],'not a word')));
+          res.className='res bad';res.innerHTML=`<span class="w">${w}</span> is not English. The list of -al nouns is closed (35 according to the OED), so -al cannot make new ones.`;}
+      },900);};
+    chips.append(c);});
+}
+
+/* Dual-route race (a toy built on Table 4.3) */
+function raceWidget(box){
+  const S0={f:'word',s:'seg',a:'none'};
+  const ROWS=[
+    ['f','Token frequency',[['word','Word more frequent than its base'],['base','Base more frequent than the word']]],
+    ['s','Segmentability',[['seg','Easy to segment'],['less','Hard to segment']]],
+    ['a','Allomorphy in the base',[['none','Affix leaves base unchanged'],['change','Affix changes the base']]]];
+  const ctl=el('div');const bt={};
+  ROWS.forEach(([k,lab,opts])=>{ctl.append(el('p','gl',lab));const ch=el('div','chips');
+    opts.forEach(([v,t])=>{const b=el('button','chip'+(S0[k]===v?' on':''),t);b.onclick=()=>{S0[k]=v;sync();};ch.append(b);bt[k+v]=b;});ctl.append(ch);});
+  const mkLane=(name,txt)=>{const l=el('div','lane');l.innerHTML=`<div class="gl">${name}</div><div class="track"><div class="runner">${txt}</div><div class="finish"></div></div>`;return l;};
+  const ld=mkLane('Direct route','insane'),lc=mkLane('Decomposition route','in + sane');
+  const go=el('button','btn','Run the race'),res=el('div','res','Set the three factors, then run the race.'),
+    note=el('p','hint','A toy model: the book gives the three factors and which way each pushes (Table 4.3), but no formula. Here each factor simply counts as one vote.');
+  box.append(ctl,ld,lc,go,res,note);
+  function sync(){ROWS.forEach(([k,,opts])=>opts.forEach(([v])=>bt[k+v].classList.toggle('on',S0[k]===v)));}
+  let tm=null;
+  function run(){
+    clearTimeout(tm);
+    const dp=(S0.f==='word')+(S0.s==='less')+(S0.a==='change');
+    const dd=3.4-0.9*dp,dc=3.4-0.9*(3-dp);
+    [ld,lc].forEach(l=>{l.classList.remove('win');const r=l.querySelector('.runner');r.style.transition='none';r.style.left='0px';r.getBoundingClientRect();});
+    [[ld,dd],[lc,dc]].forEach(([l,d])=>{const r=l.querySelector('.runner'),tr=l.querySelector('.track');
+      r.style.transition=`left ${d}s linear`;r.style.left=(tr.clientWidth-r.offsetWidth-10)+'px';});
+    res.className='res';res.textContent='…';
+    const win=dp>=2?'direct':'decomp';
+    tm=setTimeout(()=>{(win==='direct'?ld:lc).classList.add('win');
+      res.className='res good';
+      res.innerHTML=win==='direct'?`<b>Direct route wins</b> (${dp} of 3 factors favour whole-word storage). The listener looks up the word as one item.`
+        :`<b>Decomposition wins</b> (${dp} of 3 factors favour whole-word storage). The listener looks up the parts.`;},Math.min(dd,dc)*1000+150);
+  }
+  go.onclick=run;
+}
+
+/* Mini experiment: relatedness judgements */
+function expWidget(box){
+  const F=[['helpful','help'],['awful','awe'],['artful','art']];
+  const TI=[['obscurity','obscure','infrequent'],['acidity','acid','infrequent'],['modernity','modern','infrequent'],
+    ['opportunity','opportune','frequent'],['priority','prior','frequent'],['security','secure','frequent']];
+  const deck=[...F.map(([a,b])=>({a,b,g:'filler'})),...shuffle(TI.map(([a,b,g])=>({a,b,g})))];
+  let i=0;const rate=[];const wrap=el('div');box.append(wrap);
+  function draw(){
+    wrap.innerHTML='';
+    if(i>=deck.length){
+      const m=g=>{const v=deck.map((d,j)=>d.g===g?rate[j]:null).filter(x=>x!=null);return v.reduce((a,b)=>a+b,0)/v.length;};
+      const mi=m('infrequent'),mf=m('frequent');
+      const dir=mf<mi?'in the direction the chapter’s hypothesis predicts (frequent complex words stored whole, so judged less related to their bases)':
+        mf>mi?'opposite to the direction the chapter’s hypothesis predicts':'a tie, so no relationship in this tiny sample';
+      wrap.append(el('p','res good',`<b>Your ratings</b> (1 = unrelated, 7 = very related)<ul class="pts"><li>Infrequent words: <b>${mi.toFixed(1)}</b></li><li>Frequent words: <b>${mf.toFixed(1)}</b></li></ul>Your result is ${dir}.`),
+        el('p','hint','One person and six items prove nothing. Step 5 of the exercise asks the right follow-ups: did speakers agree, did every word in a group behave alike, and does a rating of semantic closeness really measure how a word is stored? Hay’s alternative is to compare each word with its own base, not just count how often it is used.'));
+      const b=el('button','btn ghost','Run it again');b.onclick=()=>{location.hash='';i=0;rate.length=0;draw();};wrap.append(b);return;}
+    const d=deck[i];
+    wrap.append(el('p','qn',`Card ${i+1} of ${deck.length}`),
+      el('p','qq',`How related is the meaning of <span style="font-family:var(--serif);font-size:21px">${d.a}</span> to <span style="font-family:var(--serif);font-size:21px">${d.b}</span>?`));
+    const row=el('div','chips');
+    for(let k=1;k<=7;k++){const c=el('button','chip',String(k));c.onclick=()=>{rate[i]=k;i++;draw();};row.append(c);}
+    wrap.append(row,el('p','hint','1 = not at all related, 7 = very related'));
+  }
+  draw();
+}
+
+/* Summary */
+function summaryWidget(box){
+  box.append(el('ul','pts',`
+   <li><b>The question:</b> do speakers store morphemes, whole word-forms, or both?</li>
+   <li><b>Morpheme lexicon:</b> economical, but meaning is often non-compositional, and base modification, cumulative expression, zero expression and empty morphs resist segmentation.</li>
+   <li><b>Strict word-form lexicon:</b> explains unproductive patterns and frequency effects, but morphemes seem real to speakers, and Turkish-sized paradigms are a challenge.</li>
+   <li><b>Moderate word-form lexicon:</b> word-forms, morphemes and derived stems are all stored. Lexical access is a race between the direct and decomposition routes.</li>
+   <li><b>Factors:</b> a complex word is more likely stored whole when it is frequent, hard to segment, or changes its base.</li>`));
+  let tot=0,good=0;const rows=[];
+  SECTIONS.forEach(s=>{let n=0,g=0;s.steps.forEach(st=>{if(st.type==='quiz')st.qs.forEach(q=>{n++;if(app.score[q.id])g++;});});
+    if(n){tot+=n;good+=g;rows.push(`<li>${s.title}: <b>${g}/${n}</b></li>`);}});
+  box.append(el('p','res',`<b>Quiz results (first try): ${good} of ${tot}</b><ul class="pts">${rows.join('')}</ul>`));
+}
+
+/* ---------- Content ---------- */
+const Q={
+ l1:{id:'l1',q:'Which items do all linguists agree must be stored in the lexicon?',
+  o:['Unpredictable items such as arrive, refuse and awful','Every regular complex word, such as helpful','Only roots and affixes','Nothing that a rule could predict'],a:0,
+  w:'Everyone accepts that the lexicon holds at least what general rules cannot predict. The disagreement is about predictable forms like helpful.'},
+ l2:{id:'l2',q:'A moderate word-form lexicon stores…',o:['Only whole word-forms','Only morphemes','Word-forms, morphemes and derived stems','Only unpredictable words'],a:2,
+  w:'Word-forms are primary, but morphological patterns (morphemes) and derived stems can be entries too, which is what chapter 3’s word-based model assumed.'},
+ e1:{id:'e1',q:'For five Greek nouns like filos, a morpheme lexicon needs 11 entries and a word-form lexicon 30. What makes the difference?',
+  o:['The suffixes are shared across nouns and stored once','Greek has no stems','Word-forms are shorter','Morphemes are easier to pronounce'],a:0,w:'Five stems plus six shared suffixes make 11. Listing every form gives 5 × 6 = 30.'},
+ e2:{id:'e2',q:'Why is reader (‘textbook’, ‘British academic’) a problem for a morpheme lexicon?',
+  o:['Its meaning is not the sum of read + -er, so the word itself must be listed','-er is not a suffix','Read is not a verb','It has no plural'],a:0,w:'Non-compositional meaning forces some complex words into the lexicon as wholes.'},
+ e3:{id:'e3',q:'Finnish oli ‘he/she was’ has no ending, while oli-n is ‘I was’. A zero-affix analysis posits…',
+  o:['An unpronounced third-person suffix Ø','An empty morph','A cumulative suffix','Metathesis'],a:0,
+  w:'The alternative is to say there is simply no third-person marker. The book finds that less far-fetched and cognitively more plausible.'},
+ e4:{id:'e4',q:'In Serbian ovc-a, one suffix expresses nominative and singular together. This is…',o:['Cumulative expression (fusion)','Zero expression','An empty morph','Reduplication'],a:0,w:'Two meanings, one inseparable form.'},
+ e5:{id:'e5',q:'In Lezgian sew-re-n, the -re- between stem and case suffix has form but no meaning. It is called…',
+  o:['An empty morph','A zero affix','A cumulative affix','A conversion'],a:0,w:'Empty morphs are the mirror image of zero affixes: form without meaning rather than meaning without form.'},
+ s1:{id:'s1',q:'Why does the English suffix -al (refusal, arrival, denial) support storing complex words?',
+  o:['It is unproductive: its list of nouns is closed, so each noun must be remembered','It is highly productive, so every form is built on the spot','It changes the base vowel','It has no meaning'],a:0,w:'If a pattern cannot make new words, the existing ones can only be known by memory.'},
+ s2:{id:'s2',q:'Why do agglutinative languages like Turkish challenge a strict word-form lexicon?',
+  o:['A verb can appear in thousands of forms, too many to memorize for every verb','Turkish has no morphemes','Turkish words are always short','Turkish has no verbs'],a:0,w:'At least 2,000 forms per verb root, times thousands of verbs. A weaker version (store the forms you have heard) may survive.'},
+ s3:{id:'s3',q:'Dutch has be-sproken, not *ge-be-sproken. What does this show?',
+  o:['The participle rule can see that the verb already has a derivational prefix, so words keep internal structure for speakers','Dutch has no participles','Prefixes are always empty','Frequency alone decides'],a:0,w:'A strict word-form lexicon with no word-internal structure would find this hard to describe.'},
+ d1:{id:'d1',q:'Insane occurs about 14 times per million words and sane about 8. Which route is favoured for insane?',
+  o:['The direct route: the complex word is more frequent than its base','Decomposition: the base is more frequent','Neither: frequency is irrelevant','Both always tie'],a:0,w:'Higher token frequency means greater memory strength, so the whole word wins the race.'},
+ d2:{id:'d2',q:'Why is electricity more likely stored whole than ambassadorship?',
+  o:['-ity changes the base (electric → electricity); -ship leaves it intact','-ity is a prefix','Ambassadorship is more frequent','-ship is unproductive'],a:0,w:'Affixes that induce allomorphy in the base are less likely to be decomposed.'},
+ d3:{id:'d3',q:'Insanely is probably stored as…',o:['insane + -ly (two entries)','in- + sane + -ly (three entries)','one whole word only','not stored at all'],a:0,
+  w:'The evidence is the relative frequency of sane and insane. Decomposition does not have to be complete.'},
+ d4:{id:'d4',q:'The chapter’s overall conclusion about the lexicon is…',
+  o:['Fundamentally word-based, with morphemes as secondary generalizations; words, morphemes and derived stems are all stored','Only morphemes are stored','Only whole words are stored','Nothing is stored; everything is computed'],a:0,w:'This is the moderate word-form lexicon, judged the most cognitively realistic of the three proposals.'},
+ c1:{id:'c1',q:'Krongo cà-màlìŋ ‘thief’ (màlìŋ = ‘theft’): cà- means ‘agent’ and ‘singular’ at once. This is…',
+  o:['Cumulative expression','Zero expression','An empty morph','Base modification'],a:0,w:'A derivational and an inflectional meaning are fused into one affix. Its plural partner is kà-.'},
+ c2:{id:'c2',q:'English worse expresses ‘bad’ and ‘comparative’ in a single stem. This is…',
+  o:['Cumulative expression through suppletion (a portmanteau)','An empty morph','Zero expression','Reduplication'],a:0,w:'Stems and affixes that fuse two meanings are also called portmanteau morphs.'},
+ c3:{id:'c3',q:'Tiv imperatives are formed by a high tone on the final syllable. Why does this complicate a morpheme lexicon?',
+  o:['The imperative meaning is carried by a rule, not by a lexical entry, so some inflection lives in entries and some in rules','Tiv has no verbs','Tones cannot be stored','The root changes completely'],a:0,w:'It is regular, so the lexicon can hold just the root, but the system becomes less uniform.'},
+ c4:{id:'c4',q:'Ability, popularity, community, morality, authority are more likely stored whole than materialize, modernize, legalize, vaporize. What is the most relevant factor?',
+  o:['-ity induces allomorphy in the base; -ize largely leaves it unchanged','-ity is longer than -ize','The -ize words are more frequent','-ity is a prefix'],a:0,
+  w:'This applies the chapter’s allomorphy factor: able → abil-ity, common → commun-ity, but legal → legal-ize.'}
+};
+
+const SECTIONS=[
+{title:'What is in the lexicon?',steps:[
+ {type:'stage',cap:`This chapter asks what speakers actually <b>memorize</b>: whole word-forms like helpful, their morphemes help and -ful, or both? The stock of stored entries is the <b>lexicon</b>.`,
+  spec:S(R([tl('h1','help','stem',2.2),tl('h2','-ful','aff',1.8)],'morphemes: help + -ful'),R([tl('hw','helpful','lex',4)],'one whole word-form'))},
+ {type:'stage',cap:`Everyone agrees on one thing: the lexicon holds whatever is <b>not predictable</b>. Arrive, refuse and deny are simple roots. Awful is complex but means nothing like ‘full of awe’.`,
+  spec:S(R([tl('a1','arrive','lex',3),tl('a2','refuse','lex',3),tl('a3','deny','lex',2.4)],'always stored'),
+         R([tl('b1','awful','lex',2.6),tl('b2','≠','op',1),tl('b3','full of awe','plain',4.6)],'not predictable from its parts'))},
+ {type:'stage',cap:`Three positions on the rest. A <b>morpheme lexicon</b> stores roots and affixes. A <b>strict word-form lexicon</b> stores every word-form. A <b>moderate word-form lexicon</b> stores word-forms, morphemes and derived stems.`,
+  spec:S(R([tl('m1','help','stem',2),tl('m2','-ful','aff',1.8),tl('m3','read','stem',2),tl('m4','-er','aff',1.4),tl('m5','-able','aff',2)],'morpheme lexicon'),
+         R([tl('w1','helpful','lex',3.2),tl('w2','reader','lex',2.8),tl('w3','readable','lex',3.4)],'strict word-form lexicon'),
+         R([tl('x1','helpful','lex',3.2),tl('x2','help','stem',1.8),tl('x3','-ful','aff',1.6),tl('x4','reader','lex',2.8)],'moderate word-form lexicon'))},
+ {type:'quiz',cap:'Quick check.',qs:[Q.l1,Q.l2]}
+]},
+{title:'A morpheme lexicon?',steps:[
+ {type:'stage',cap:`Morphemes look like the natural units: sentences are made of words, words of morphemes, morphemes of phonemes. Nobody memorizes every sentence, so perhaps nobody memorizes complex words either.`,
+  spec:S(R([tl('w','unfriendly','lex',5)],'word'),R([tl('u','un-','aff',1.6),tl('f','friend','stem',2.6),tl('l','-ly','aff',1.6)],'morphemes'),R(['f','r','ɛ','n','d'].map((c,i)=>tl('p'+i,c,'plain',1)),'phonemes of friend'))},
+ {type:'widget',cap:`The big attraction is <b>economy</b>. Add nouns that inflect like Greek filos and compare how many entries each kind of lexicon needs.`,build:econWidget},
+ {type:'stage',cap:`Problem 1: <b>meaning is not always the sum of the parts</b>. A reader may be someone who reads, but also a kind of textbook, or a British academic rank. Those last two senses cannot be computed.`,
+  spec:S(R([tl('r1','read','stem',2.2),tl('r2','-er','aff',1.6)],'compositional: ‘someone who reads’'),R([tl('m2','a textbook','bad',4.6)],'not predictable'),R([tl('m3','a UK academic rank','bad',7)],'not predictable'))},
+ {type:'widget',cap:`Problem 2: <b>segmentation</b>. Some patterns do not break cleanly into form-plus-meaning pieces. Tap each case and press the button.`,build:b=>labWidget(b,PROB_EX,'Show the problem','Back')},
+ {type:'stage',cap:`Five problems in all. The morpheme lexicon is elegant only if it is also empirically adequate, and these cases keep forcing exceptions.`,
+  spec:S(R([tl('p1','unpredictable meaning','bad',7)],'reader'),R([tl('p2','base modification','bad',7)],'Mütter'),R([tl('p3','cumulative expression','bad',7)],'ovc-a'),
+         R([tl('p4','zero expression','bad',7)],'oli'),R([tl('p5','empty morphs','bad',7)],'sew-re-n'))},
+ {type:'quiz',cap:'Check yourself.',qs:[Q.e1,Q.e2,Q.e3,Q.e4,Q.e5]}
+]},
+{title:'A strict word-form lexicon?',steps:[
+ {type:'widget',cap:`The opposite idea: store <b>every</b> word-form. Evidence: some patterns are <b>unproductive</b>. English -al builds action nouns, but only for a closed list. Try it.`,build:alWidget},
+ {type:'stage',cap:`There is a second argument. People remember what they meet often, whether or not it is predictable. A word-form lexicon lacks elegance but may be more <b>cognitively realistic</b>. Research goals can conflict.`,
+  spec:S(R([tl('g1','elegance','plain',3.8),tl('g2','⇄','op',1),tl('g3','cognitive realism','stem',6.4)],'two goals pulling apart'))},
+ {type:'stage',cap:`The challenge: <b>agglutinative</b> languages. Turkish verbs stack affixes. Start with a root…`,
+  spec:S(R([tl('t0','oku','stem',2.2)],'read'))},
+ {type:'stage',cap:`…and add more: ‘I might not be able to read’. A root can take at least 2,000 forms, times thousands of verbs. Storing them all looks impossible, though a weaker version (store what you have heard) may survive.`,
+  spec:S(R([tl('t0','oku','stem',2.2),tl('t1','-ya','aff',1.6,{enter:'right'}),tl('t2','-ma','aff',1.6,{enter:'right'}),tl('t3','-yabil','aff',2.4,{enter:'right'}),tl('t4','-ir','aff',1.6,{enter:'right'}),tl('t5','-im','aff',1.7,{enter:'right'})],'okuyamayabilirim'),
+         R([tl('u0','read','plain',2.2),tl('u1','pot','plain',1.6),tl('u2','neg','plain',1.6),tl('u3','pot','plain',2.4),tl('u4','aor','plain',1.6),tl('u5','1sg','plain',1.7)],'glosses'))},
+ {type:'widget',cap:`The more serious problem: speakers seem to <b>know about morphemes</b>. Rules and sound patterns refer to word-internal structure. Tap each case.`,build:b=>labWidget(b,EV_EX,'Show the pattern','Back')},
+ {type:'quiz',cap:'Check yourself.',qs:[Q.s1,Q.s2,Q.s3]}
+]},
+{title:'Words and morphemes together',steps:[
+ {type:'stage',cap:`The fix: treat a morpheme as a <b>generalization over stored words</b>. Here are Russian words stored whole.`,
+  spec:S(R([tl('r1','ruka','lex',2.4),tl('r2','ruku','lex',2.4)],'hand · nom. sg / acc. sg'),R([tl('s1','ryba','lex',2.4),tl('s2','rybu','lex',2.4)],'fish · nom. sg / acc. sg'),R([tl('t1','sestra','lex',3),tl('t2','sestru','lex',3)],'sister · nom. sg / acc. sg'))},
+ {type:'stage',cap:`Patterns extracted from those words are entries too: suffix schemas <b>/Xa/</b> and <b>/Xu/</b>, and roots. So “morpheme” becomes one kind of <b>morphological pattern</b>, with word-forms still primary.`,
+  spec:S(R([tl('x1','X','var',1.2),tl('x2','a','aff',1)],'/Xa/ · nom. sg'),R([tl('y1','X','var',1.2),tl('y2','u','aff',1)],'/Xu/ · acc. sg'),R([tl('z1','ruk-','stem',2),tl('z2','ryb-','stem',2),tl('z3','sestr-','stem',2.6)],'roots'))},
+ {type:'widget',cap:`Which complex words are stored is hard to say. Words are <b>actual</b> (familiar), <b>possible</b> (buildable but new) or impossible. Sort them.`,
+  build:b=>sort3Widget(b,AP_ITEMS,{actual:'Actual word',possible:'Possible, not actual',impossible:'Impossible'})},
+ {type:'stage',cap:`Novel words that appear but do not catch on are <b>occasionalisms</b>. Around 1943 deglamorize and decolonize both appeared. Decolonize caught on; deglamorize never really entered the lexicon, though the OED records it.`,
+  spec:S(R([tl('d1','deglamorize','ghost',5.8)],'observed in 1943, never caught on'),R([tl('d2','decolonize','lex',5)],'observed in 1943, now an actual word'))},
+ {type:'stage',cap:`If both are stored, hearing <b>insane</b> allows two routes to its meaning: look up the parts, or look up the whole word.`,
+  spec:S(R([tl('i1','in','aff',1.4),tl('i2','sane','stem',2.2)],'decomposition route'),R([tl('i3','insane','lex',3.4)],'direct route'))},
+ {type:'widget',cap:`Evidence suggests both routes run at once, as a <b>race</b>. Three factors decide the winner: frequency, segmentability and allomorphy. Set them and run it.`,build:raceWidget},
+ {type:'stage',cap:`Frequent words are better remembered: greater <b>memory strength</b>. Sane occurs about 8 times per million words, insane about 14. So insane wins by the direct route.`,
+  spec:S(R([tl('f1','sane','stem',2.4,{sub:'8'})],'per million words (CELEX)'),R([tl('f2','insane','lex',3.4,{sub:'14'})],'')) },
+ {type:'stage',cap:`Insanely is far rarer than insane, so it is surely not stored whole. But as three pieces?`,
+  spec:S(R([tl('n1','in','aff',1.4),tl('n2','sane','stem',2.2),tl('n3','ly','aff',1.4)],'insanely'))},
+ {type:'stage',cap:`Probably two: <b>insane + -ly</b>, because insane is more frequent than sane. Decomposition need not be total.`,
+  spec:S(R([tl('n1','in','aff',1.4),tl('n2','sane','stem',2.2),tl('n3','ly','aff',1.4)],'insanely',[{id:'g',from:0,to:1,label:'insane stored whole'}]))},
+ {type:'stage',cap:`The conclusion: word-forms, morphemes and derived stems are <b>all</b> stored, but the balance tips easily to whole words. The lexicon is fundamentally <b>word-based</b>; morphemes are secondary generalizations.`,
+  spec:S(R([tl('c1','word-forms','lex',4.6)],'primary'),R([tl('c2','derived stems','var',4.6),tl('c3','morphemes','stem',4)],'secondary generalizations'))},
+ {type:'quiz',cap:'Check yourself.',qs:[Q.d1,Q.d2,Q.d3,Q.d4]}
+]},
+{title:'Exercises and experiment',steps:[
+ {type:'quiz',cap:`Questions based on the chapter’s exercises: name the phenomenon, or apply the factors.`,qs:[Q.c1,Q.c2,Q.c3,Q.c4]},
+ {type:'widget',cap:`The exploratory exercise: how can researchers test what the lexicon holds? Ask speakers how related a complex word is to its base. This mini version runs on you; the frequency groups follow the book’s sample list.`,build:expWidget},
+ {type:'widget',cap:`That is chapter 4. Here is what to take away.`,build:summaryWidget}
+]}
+];
+
+const sepT=id=>tl(id,'-','op',.5);
+var PROB_EX=[
+ {name:'Mütter',lang:'Base modification · German',desc:'<span class="w">Mutter → Mütter</span>. The plural is signalled by a vowel change, so there is no separate plural piece to store as a morpheme.',
+  a:S(R(T('Mutter','g'),'singular · mother')),b:S(R(chg(T('Mutter','g'),{1:'ü'}),'plural: no ‘plural’ piece to cut out'))},
+ {name:'Cumulative',lang:'Cumulative expression · Serbian',desc:'<span class="w">ovc-a, ovc-u, ovc-e…</span> Each suffix marks case and number together. Krongo cà- means ‘agent + singular’, and English worse is ‘bad + comparative’ in one stem.',
+  a:S(R([tl('o','ovc','stem',2.4),tl('x','-a','aff',1.4)],'ovca · ‘sheep’, nominative singular')),
+  b:S(R([tl('o','ovc','stem',2.4),tl('x','-a','aff',1.4)],'one suffix…'),R([tl('n','NOM','var',1.8),tl('p','+','op',.6),tl('sg','SG','var',1.8)],'…carrying two meanings at once'))},
+ {name:'Zero',lang:'Zero expression · Finnish',desc:'<span class="w">oli-n, oli-t, oli…</span> A meaning with no form. You can posit an unpronounced Ø, or simply say there is no third-person marker, which the book finds less far-fetched.',
+  a:S(R([tl('f1','oli','stem',2),tl('f2','-n','aff',1.2)],'oli-n · I was'),R([tl('g1','oli','stem',2),tl('g2','-t','aff',1.2)],'oli-t · you were')),
+  b:S(R([tl('f1','oli','stem',2),tl('f2','-n','aff',1.2)],'oli-n · I was'),R([tl('g1','oli','stem',2),tl('g2','-t','aff',1.2)],'oli-t · you were'),R([tl('h1','oli','stem',2),tl('h2','Ø','ghost',1.2,{enter:'right'})],'oli · he/she was: a zero morpheme?'))},
+ {name:'Empty',lang:'Empty morphs · Lezgian',desc:'<span class="w">sew-re-n, fil-di-n, Rahim-a-n</span> (genitive). The middle piece has a form but no meaning, and it varies by noun. Calling it an empty morph keeps the case suffixes uniform, but it breaks the definition of a morpheme as the smallest meaningful part.',
+  a:S(R([tl('s0','sew','stem',2.2)],'absolutive · ‘bear’')),
+  b:S(R([tl('s0','sew','stem',2.2),tl('s1','re','ghost',1.2,{enter:'right'}),tl('s2','n','aff',1.2,{enter:'right'})],'sew-re-n'),R([tl('f0','fil','stem',2.2),tl('f1','di','ghost',1.2,{enter:'right'}),tl('f2','n','aff',1.2,{enter:'right'})],'fil-di-n'),R([tl('r0','Rahim','stem',3),tl('r1','a','ghost',1.2,{enter:'right'}),tl('r2','n','aff',1.2,{enter:'right'})],'Rahim-a-n'))},
+ {name:'Tone rule',lang:'Rule vs entry · Tiv',desc:'<span class="w">de → dé</span> ‘leave’ → ‘leave!’. A final high tone marks the imperative. It is regular, so only the root need be listed, but then this inflectional meaning lives in a rule while others live in entries.',
+  a:S(R(T('de','t'),'root')),b:S(R(chg(T('de','t'),{1:'é'}),'imperative: a tone rule, not an affix'))}
+];
+var EV_EX=[
+ {name:'Dutch',lang:'Past participle · plain verb',desc:'<span class="w">spreken → ge-sproken</span> ‘speak’ → ‘spoken’. The participle takes the prefix ge-…',
+  a:S(R([tl('d0','spreken','stem',3.4)],'speak')),b:S(R([tl('d1','ge-','aff',1.5,{enter:'left'}),tl('d2','sproken','stem',3.4)],'spoken'))},
+ {name:'Dutch + prefix',lang:'Past participle · prefixed verb',desc:'<span class="w">be-spreken → be-sproken</span> ‘discuss’, not *ge-be-sproken. The rule needs to know that the verb already has a derivational prefix, so speakers must know word-internal structure.',
+  a:S(R([tl('e0','be-','aff',1.5),tl('e1','spreken','stem',3.4)],'discuss')),
+  b:S(R([tl('e0','be-','aff',1.5),tl('e1','sproken','stem',3.4)],'discussed'),R([tl('x','*gebesproken','bad',6.2)],'not formed'))},
+ {name:'Sanskrit',lang:'Converb · -tvā or -ya',desc:'<span class="w">ga-tvā</span> ‘having gone’ (no prefix, so -tvā), but <span class="w">ā-gam-ya</span> ‘having come’ (prefix, so -ya), never *ā-ga-tvā. Again the choice depends on structure inside the word.',
+  a:S(R([tl('g0','ga','stem',1.4),tl('g1','-tvā','aff',1.8)],'unprefixed verb → -tvā')),
+  b:S(R([tl('h0','ā-','aff',1.2),tl('h1','gam','stem',2),tl('h2','-ya','aff',1.5)],'prefixed verb → -ya'),R([tl('x','*ā-ga-tvā','bad',5.2)],'not formed'))},
+ {name:'Italian',lang:'Sound pattern · s between vowels',desc:'<span class="w">casa</span>: s between vowels is pronounced [z]. But in <span class="w">a-simmetrico</span> the s begins a morpheme and stays [s]. The sound rule has to see the morpheme boundary.',
+  a:S(R([tl('c0','c'),tl('c1','a'),tl('c2','z','mod'),tl('c3','a')],'casa · s → [z] between vowels')),
+  b:S(R([tl('a0','a-','aff',1.4),tl('a1','s','ok'),tl('a2','immetrico','stem',4.4)],'asimmetrico · morpheme-initial s stays [s]'))}
+];
+var AP_ITEMS=[
+ ['misrepresent','actual','Familiar to most speakers (one of the book’s examples).'],
+ ['globalize','actual','Familiar to most speakers.'],
+ ['decolonize','actual','It arose around 1943, caught on, and most speakers know it now.'],
+ ['mistransliterate','possible','Made up by the book: perfectly buildable, but new.'],
+ ['bagelize','possible','Made up by the book. If bagel shops keep spreading, people may start saying Europe is being bagelized.'],
+ ['deglamorize','possible','Recorded in 1943, but it never really caught on: a possible word and an occasionalism.'],
+ ['*repairal','impossible','-al is unproductive; its list of nouns is closed, so it cannot form new ones.'],
+ ['*amusal','impossible','Same reason: -al cannot create new lexemes in English.']];
+
+
+Lesson.start({label:'Chapter 4 · Lexicon',sections:SECTIONS});
+
+</script>
+</body>
+</html>
