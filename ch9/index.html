@@ -1,1 +1,183 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>Chapter 9 · Words and phrases · Understanding Morphology</title>
+<link rel="stylesheet" href="../assets/lesson.css">
+</head>
+<body>
+<script src="../assets/lesson.js"></script>
+<script>
+const {el,seg,T,tl,R,S,chg,mark,strip,shuffle,Stage,app,quizWidget,labWidget,sort3Widget}=Lesson;
+const mq=(id,q,right,wrongs,w)=>({id,q,o:[right,...wrongs],a:0,w});
+const wd=s=>s.length*.46+.9;
+const W=(id,t,k,x)=>tl(id,t,k||'stem',wd(t)+.6,x);
 
+/* ---------- generic two-column explorer (Tables 9.1 and 9.3) ---------- */
+function tableWidget(box,heads,rows,hint){
+  const tb=el('table','tb');tb.innerHTML=`<tr><th style="text-align:left"></th><th>${heads[0]}</th><th>${heads[1]}</th></tr>`;
+  const res=el('div','res',hint);
+  rows.forEach(r=>{const tr=el('tr','row');tr.innerHTML=`<td><b>${r[0]}</b></td><td>${r[1]}</td><td>${r[2]}</td>`;
+    tr.onclick=()=>{[...tb.querySelectorAll('tr.row')].forEach(x=>x.classList.remove('on'));tr.classList.add('on');res.innerHTML=r[3];};tb.append(tr);});
+  box.append(tb,res);
+}
+const T91=[
+ ['Semantic','dependent may be referential; head can be replaced by a pronoun','dependent almost always generic; head cannot be replaced',`Lango <i>wì rwòt</i> ‘the king’s head’ refers to a particular king, so it is a phrase. In <i>piano-tuner</i>, piano means pianos in general. Generic is not sufficient alone: German <i>Haus aus Holz</i> is a phrase with a generic dependent.`],
+ ['Phonological','less cohesion','more cohesion: one domain for stress, harmony',`English: góldfìsh has one main stress (compound), góld médal has two (phrase). Chukchi compounds are a single domain for vowel harmony, and harmony never crosses word boundaries.`],
+ ['Morphological','no cohesion','a domain for affixation',`<i>sister-in-laws</i> puts the plural on the whole unit, so it must be a compound. Ponapean completive -la attaches after the whole compound keng-winih-la.`],
+ ['Syntactic','separable, dependent expandable, coordination ellipsis','inseparable, not expandable, no ellipsis',`Hausa compound gida-n-sauroo cannot be split by an adjective. <i>*illegitimate kingmaker</i> fails expansion. <i>*Flying Ø and small fish</i> fails ellipsis, so flying fish is a compound.`]];
+const T93=[
+ ['Host selection','free: hosts of various categories','affix: only its stem’s class',`English =’s attaches to a preposition (about=’s), a verb (broke=’s) or a noun (street=’s). Affixes attach to stems they are syntactically related to.`],
+ ['Prosodic integration','may be outside the stress domain','within the stress domain',`Spanish díga=me=lo has stress on the fourth syllable from the end, impossible in a single word, so clitics lie outside the stress domain. French joue=’le is stressed as a unit.`],
+ ['Phonological rules','may be invisible to word-level rules','inside the domain',`Dutch final devoicing: brand=ik is devoiced even though the clitic starts with a vowel. Ponapean vowel lengthening happens before =et but not before -ei.`],
+ ['Suppletion','do not trigger or undergo it','may trigger or undergo it',`Finnish nainen → naise-nsa (affix) but nainen=ko (clitic). Polish -m/-ę (verb affixes vary by class) vs invariable =go.`],
+ ['Meaning and gaps','no idiosyncrasy, no gaps','may have both',`Dutch <i>ouder</i> ‘older’ → ‘parent’ shows idiosyncratic meaning in an affix–base combination. Clitic–host combinations are always possible.`],
+ ['Movement','possible freedom','none',`Simple clitics can sit wherever the free form can. Special clitics have their own position (e.g. second position). Affixes never move away from their base.`]];
+
+/* ---------- Summary ---------- */
+function summaryWidget(box){
+  box.append(el('ul','pts',`
+   <li>Spelling is an unreliable guide to <b>word boundaries</b>, so we need linguistic tests.</li>
+   <li><b>Compounds vs phrases:</b> semantic (generic dependent), phonological, morphological and syntactic cohesion.</li>
+   <li><b>Free vs bound:</b> free forms are prosodically independent; they can be clefted, topicalised and coordinated.</li>
+   <li><b>Clitics vs affixes:</b> clitics have freedom of host, less integration, no suppletion or idiosyncrasies, and may move. Clitics are heterogeneous, and often a stage between word and affix.</li>
+   <li><b>Lexical Integrity:</b> syntax cannot refer to the parts of words. Apparent counterexamples exist, and the debate continues.</li>`));
+  let tot=0,good=0;const rows=[];
+  SECTIONS.forEach(s=>{let n=0,g=0;s.steps.forEach(st=>{if(st.type==='quiz')st.qs.forEach(q=>{n++;if(app.score[q.id])g++;});});
+    if(n){tot+=n;good+=g;rows.push(`<li>${s.title}: <b>${g}/${n}</b></li>`);}});
+  box.append(el('p','res',`<b>Quiz results (first try): ${good} of ${tot}</b><ul class="pts">${rows.join('')}</ul>`));
+}
+
+const Q={
+ w1:mq('w1','Why is spelling an unreliable guide to wordhood?','Conventions vary and are partly arbitrary (flower pot, flowerpot; lo hacemos, hacerlo)',['Spelling is always correct','Only Chinese lacks spaces','Hyphens always mark words'],'Writing systems differ, and even within a language the same element can be written separately or joined.'),
+ c1:mq('c1','Why does the plural sister-in-laws show that the expression is a compound?','The plural suffix attaches to the whole unit, and -s normally attaches only to words',['The plural is irregular','Sisters-in-law is incorrect','Law is a verb'],'In sisters-in-law the -s is on the head and could be either. Sister-in-laws can only be a word.'),
+ c2:mq('c2','The dependent noun in a compound is almost always…','Generic, not referring to a particular thing',['Referential','Plural','The head'],'Piano-tuner tunes pianos in general. But generic is not sufficient to prove compound status.'),
+ c3:mq('c3','Which sentence shows silversmith is a compound?','*My aunt knows one goldsmith and three silver ones',['My aunt has one gold watch and three silver ones','Silver is a noun','Smith is a verb'],'The head of a compound cannot be replaced by an anaphoric pronoun. A phrase like gold watch allows it.'),
+ c4:mq('c4','In Chukchi both members of a compound show the same vowel set. What does this prove?','That it is one word: vowel harmony never crosses word boundaries',['It is a phrase','It is a clitic group','Chukchi has no compounds'],'In languages like Turkish absence of harmony proves nothing, but presence in Chukchi is decisive.'),
+ f1:mq('f1','French il (bound) vs lui (free). Which test shows that il is bound?','It cannot be clefted: *C’est il qui…, one says C’est lui qui…',['It has a plural','It cannot be a subject','It is stressed'],'Clefts need prominent stress, which bound forms cannot bear.'),
+ f2:mq('f2','Where can an utterance be interrupted?','Between two free forms, but not between a bound form and its host',['Anywhere','Only between affixes','Only at clitics'],'*Paul start … ed to play is impossible, and so is Croatian *Oni … =su počeli.'),
+ f3:mq('f3','Do clitics bear their own stress?','No: they depend on the stress of their host (the prosodic word)',['Always','Only in French','Only in English'],'French joue=’le: the stress is the whole word’s, not le’s own.'),
+ k1:mq('k1','Why is English =’s a clitic and not an affix?','It combines with hosts of many categories: preposition, verb, noun',['It is spelled with an apostrophe','It is a suffix on nouns only','It changes meaning of the host'],'Freedom of host selection: the host need not be syntactically related.'),
+ k2:mq('k2','Dutch brand=ik is devoiced, while verband-ig is not. This shows…','The clitic is outside the domain of the word-level rule',['=ik is an affix','The verb is defective','Dutch has no devoicing'],'Affixes are within the domain; clitics may be invisible to it.'),
+ k3:mq('k3','Pitjantjatjara =ni appears only after the first constituent. This is…','A special clitic with a position of its own (second-position)',['A simple clitic','An affix','A free pronoun'],'A simple clitic occurs where the free form does. The free pronoun can be elsewhere.'),
+ k4:mq('k4','Historically, clitics are best seen as…','An intermediate stage between free words and affixes',['Always affixes in waiting','A type of compound','Errors of spelling'],'Not every clitic becomes an affix, but many affixes began as free words.'),
+ l1:mq('l1','The Lexical Integrity Hypothesis says…','Syntactic rules apply to whole words, not to their internal parts',['Words have no meaning','Compounds are phrases','Syntax and morphology are the same'],'As far as syntax is concerned, words are atomic.'),
+ l2:mq('l2','Why do clitics not violate the hypothesis?','Integrity holds over the morphosyntactic word, and clitic and host are separate words',['They are affixes','They are prosodically independent','They are not words'],'It would be wrong to apply it to the prosodic word, since clitics move independently.'),
+ l3:mq('l3','Southern Tiwa verbs agree with an incorporated noun. Why is this problematic?','Agreement is a syntactic rule, and it seems to apply to part of a word',['Agreement is morphological','The noun is generic','Incorporation is rare'],'Agreement and movement are syntactic, so we should not find them inside words.'),
+ l4:mq('l4','Where do lexical integrity effects most commonly come from?','The architecture: morphology delivers complete words to syntax',['Universal Grammar only','Spelling conventions','Frequency'],'If morphology and syntax are separate components, syntax cannot look inside finished words.'),
+ x2:mq('x2','Exercise 2: why is English 3sg -s an affix, not a clitic?','It attaches only to verbs, cannot move, and has a fixed position (my analysis)',['It attaches to any host','It is stressed','It is a free pronoun'],'Contrast =’s, which has freedom of host selection and a free counterpart is.'),
+ x31:mq('x31','Exercise 3a: Polish *Go spotkałem w Krakowie. What is wrong?','The clitic go needs a host on its left (as in kocham=go), but starts the sentence',['Go is not a pronoun','The verb is defective','Polish has no clitics'],'My analysis: Polish object clitics follow their host.'),
+ x32:mq('x32','Exercise 3b: French “Non, tu=joues” as an answer. What is wrong?','Tu is bound and cannot be used where stress or contrast is needed; the free form toi is required',['Tu is plural','Joues is wrong','French has no clitics'],'My analysis: contrastive answers need a free form (compare C’est lui qui…).'),
+ x33:mq('x33','Exercise 3c: Serbian *Klaru čovek voleo=je. What is wrong?','Second-position clitic =je is placed after the last word',['Je is not an auxiliary','Čovek is plural','Klaru has no host'],'My analysis, following Marija =ga voli vs *Marija voli =ga.'),
+ x34:mq('x34','Exercise 3d: Ponapean *keng-wini-o-la. What is wrong?','An incorporated noun is generic, and the demonstrative -o makes it referential',['-la is not an aspect','Keng is not a verb','Ponapean forbids compounds'],'My analysis, following keng-wini ‘take medicine’ vs kang wini-o ‘take that medicine’.'),
+ x4:mq('x4','Exercise 4: where is the contradiction in Spanish bound pronominals?','Outside the stress domain like clitics, yet undergoing le → se like affixes',['They are always affixes','They are always clitics','They carry stress'],'Díga=me=lo has stress that no word could have, but díga-se-lo shows an alternation clitics should not have.')
+};
+
+const SECTIONS=[
+{title:'Why spelling is not enough',steps:[
+ {type:'stage',cap:`We have assumed that a word is whatever sits between spaces. But Chinese has no spaces, and even in European languages spelling is inconsistent: flower pot, flower-pot, flowerpot.`,
+  spec:S(R([W('a','flower pot','plain'),W('b','flower-pot','plain'),W('c','flowerpot','plain')],'one thing, three spellings'))},
+ {type:'stage',cap:`Spanish writes weak object pronouns separately before the verb but joined after it: <i>lo hacemos</i> but <i>hacerlo</i>. German writes <i>zu bringen</i> but <i>einzubringen</i>.`,
+  spec:S(R([W('a','lo','aff'),W('b','hacemos','stem')],'before: separate'),R([W('c','hacer','stem'),W('d','lo','aff')],'after: joined (hacerlo)'))},
+ {type:'stage',cap:`So we need linguistic criteria for telling <b>words</b>, <b>phrases</b> and <b>affixes</b> apart. Three problems: compounds vs phrases, free vs bound forms, and clitics vs affixes. Then: why do words behave differently from phrases?`,
+  spec:S(R([tl('a','compound','stem',3.8),tl('b','phrase','mod',3.2)],'1. compounds vs phrases'),R([tl('c','free','stem',2.6),tl('d','bound','aff',2.6)],'2. free vs bound'),R([tl('e','clitic','var',3),tl('f','affix','aff',2.6)],'3. clitics vs affixes'))},
+ {type:'quiz',cap:'Quick check.',qs:[Q.w1]}
+]},
+{title:'Compounds vs phrases',steps:[
+ {type:'stage',cap:`Easy cases: when the language does not allow juxtaposed nouns as a phrase, the combination must be a compound. German <i>Holzhaus</i>. Italian <i>segnalibri</i> ‘bookmark’ vs the imperative phrase <i>segna libri</i> ‘mark books!’.`,
+  spec:S(R([W('a','Holz','stem'),W('b','haus','stem')],'one word: wood house'),R([W('c','segna','stem'),W('d','libri','stem')],'two words: an imperative phrase'))},
+ {type:'stage',cap:`Sometimes a special marker helps. Coast Tsimshian uses an interfix <b>-m-</b>: gyemg-m-dziws ‘sun’. German uses -s- and -en-.`,
+  spec:S(R([W('a','gyemg','stem'),tl('b','-m-','aff',1.6),W('c','dziws','stem')],'light + day = ‘sun’'))},
+ {type:'stage',cap:`Harder: Lango has an inalienable possessive phrase <i>wì rwòt</i> ‘the king’s head’, and idiomatic <i>wàŋ ɔ̀t</i> ‘window’. Idiomatic meaning is neither necessary nor sufficient for a compound: <i>spill the beans</i> is an idiomatic phrase.`,
+  spec:S(R([W('a','wì','stem'),W('b','rwòt','stem')],'phrase: a particular king'),R([W('c','wàŋ','stem'),W('d','ɔ̀t','stem')],'‘window’: compound, probably'))},
+ {type:'stage',cap:`<b>Semantic</b> test: the dependent in a compound is generic. In Lakhota, ‘chop wood’ drops the second determiner when the noun is incorporated.`,
+  spec:S(R([W('a','čhá˛','stem'),W('b','káksa','stem')],'wood-chop: any wood'),R([W('c','čhá˛ ki','stem'),W('d','kaksá','stem')],'the wood… chop: a particular wood'))},
+ {type:'stage',cap:`<b>Phonological</b> cohesion: English compounds typically have one main stress. Goldfish and Whitehouse have a single stress. Gold medal and white knight have two.`,
+  spec:S(R([W('a','góldfìsh','ok'),W('b','Whíte Hòuse','ok')],'one main stress: compound'),R([W('c','góld médal','bad'),W('d','whíte kníght','bad')],'two stresses: phrase'))},
+ {type:'widget',cap:`The four kinds of criteria (Table 9.1). Tap a row.`,build:b=>tableWidget(b,['Phrase','Compound'],T91,'Tap a row for examples.')},
+ {type:'widget',cap:`Compound or phrase? Apply the tests.`,
+  build:b=>sort3Widget(b,[
+   ['sister-in-laws: plural on the whole unit','comp','The plural attaches to a unit, not to the head alone, so it is a word.'],
+   ['flying fish: *Flying Ø and small fish','comp','Coordination ellipsis is impossible inside compounds.'],
+   ['silversmith: *three silver ones','comp','The head of a compound cannot be replaced by an anaphoric pronoun.'],
+   ['Japanese rakka suru: noun omitted in the answer','phr','The noun can be dropped with anaphoric interpretation: a phrase after all.'],
+   ['Lango wì rwòt ‘the king’s head’','phr','The dependent is referential: a particular king.'],
+   ['Hausa gida-n-sauroo: an adjective cannot intervene','comp','Inseparable: gidaa bàbba na sauroo is impossible.'],
+   ['Chukchi pəlvəntə-kopra-n: vowels harmonise','comp','Vowel harmony never crosses word boundaries.'],
+   ['gold watch … three silver ones','phr','The head can be replaced by ones: a phrase.']],
+   {comp:'Compound',phr:'Phrase'})},
+ {type:'quiz',cap:'Check yourself.',qs:[Q.c1,Q.c2,Q.c3,Q.c4]}
+]},
+{title:'Free vs bound forms',steps:[
+ {type:'stage',cap:`A <b>free form</b> is a word that is prosodically independent. A <b>bound form</b> (affix or clitic) must lean on a host. “Bound form” here is broader than “bound stem”.`,
+  spec:S(R([W('a','play','stem'),W('b','-ed','aff')],'host + affix: bound'),R([W('c','Paul','stem'),W('d','left','stem')],'free forms'))},
+ {type:'stage',cap:`Test 1, interruption: you can pause between free forms (Paul … started to play) but not between a bound form and its host (*Paul start … ed). Croatian <i>=su</i> is a clitic, so no pause is possible before it.`,
+  spec:S(R([W('a','Oni=su','ok'),tl('b','…','op',.8),W('c','počeli','stem')],'✓ pause after the host'),R([W('d','Oni','bad'),tl('e','…','op',.8),W('f','=su','bad')],'✗ pause before the clitic'))},
+ {type:'stage',cap:`Test 2, contrast: a free form can carry contrastive stress (Paul started to play), a bound form cannot. Test 3, clefts and topics: French <i>lui</i> (free) can be clefted, but <i>il</i> (bound) cannot.`,
+  spec:S(R([W('a','C’est lui qui…','ok')],'✓ free form'),R([W('b','*C’est il qui…','bad')],'✗ bound form'),R([W('c','moi, je=joue','ok'),W('d','*je, je=joue','bad')],'topicalised: free form only'))},
+ {type:'quiz',cap:'Check yourself.',qs:[Q.f1,Q.f2,Q.f3]}
+]},
+{title:'Clitics vs affixes',steps:[
+ {type:'stage',cap:`Clitics are bound like affixes but behave like words in other respects. They are so heterogeneous that “clitic” is sometimes a catch-all for things that are not quite word nor affix. The best tests are collective.`,
+  spec:S(R([tl('a','word','stem',2.6),tl('b','clitic','var',2.6),tl('c','affix','aff',2.6)],'a continuum'))},
+ {type:'stage',cap:`<b>Host selection:</b> English =’s attaches to hosts of any kind. An affix attaches only to its own stems.`,
+  spec:S(R([W('a','about','stem'),tl('b','=’s','var',1.6)],'preposition'),R([W('c','broke','stem'),tl('d','=’s','var',1.6)],'verb'),R([W('e','street','stem'),tl('f','=’s','var',1.6)],'noun'))},
+ {type:'widget',cap:`Compare the criteria (Table 9.3). Tap a row.`,build:b=>tableWidget(b,['Clitics','Affixes'],T93,'Tap a row for examples.')},
+ {type:'widget',cap:`Clitic or affix? Decide from the behaviour.`,
+  build:b=>sort3Widget(b,[
+   ['English =’s after prepositions, verbs, nouns','cli','Freedom of host selection.'],
+   ['Finnish naise-nsa ‘his woman’','aff','It triggers the suppletive stem naise- (not nainen).'],
+   ['Finnish nainen=ko ‘the woman?’','cli','No stem alternation: the clitic leaves the stem as it is.'],
+   ['Dutch brand=ik: final devoicing still applies','cli','The vowel-initial clitic is invisible to the word-level rule.'],
+   ['Polish verb endings -m / -ę depending on class','aff','Suppletive allomorphs by inflection class.'],
+   ['Polish object pronoun =go, always the same','cli','Invariable shape and attaches to varied hosts.'],
+   ['Dutch ouder ‘older’ → ‘parent’','aff','Idiosyncratic meaning of an affix–base combination.'],
+   ['Ponapean sapw-ei ‘my land’: no final vowel lengthening','aff','The suffix is inside the word, so the word-final rule does not apply.'],
+   ['Ponapean sahpw=et ‘this land’: lengthening still applies','cli','The demonstrative clitic is outside the word-level rule.']],
+   {aff:'Affix',cli:'Clitic'})},
+ {type:'stage',cap:`Clitics are of two types. A <b>simple clitic</b> goes wherever the free form can, like ’s for <i>is</i>. A <b>special clitic</b> has a position of its own. Serbian second-position clitics: =ga must be second.`,
+  spec:S(R([W('a','Marija','stem'),W('b','=ga','var'),W('c','voli','stem')],'✓ second position'),R([W('d','Marija','stem'),W('e','voli','stem'),W('f','=ga','bad')],'✗ third position'))},
+ {type:'stage',cap:`The free pronoun can go anywhere: <i>Marija voli njega</i> is fine. This special syntax is why a special clitic is not just a reduced word.`,
+  spec:S(R([W('a','Marija','stem'),W('b','voli','stem'),W('c','njega','ok')],'✓ free form in third position'))},
+ {type:'stage',cap:`Diachronically, clitics are an intermediate stage. A free word is reduced in fast speech, is reanalysed as a clitic, and may gradually pick up affix properties. Each step is small and not inevitable.`,
+  spec:S(R([tl('a','free word','stem',3.6),tl('b','→','op',.8),tl('c','clitic','var',2.6),tl('d','→','op',.8),tl('e','affix','aff',2.6)],'a series of small changes'))},
+ {type:'quiz',cap:'Check yourself.',qs:[Q.k1,Q.k2,Q.k3,Q.k4]}
+]},
+{title:'Lexical integrity',steps:[
+ {type:'stage',cap:`Why do words and phrases differ so systematically? One answer is the <b>Lexical Integrity Hypothesis</b>: syntactic rules can see whole words, but not their internal parts. For syntax, words are atoms.`,
+  spec:S(R([tl('a','syntax','mod',3),tl('b','sees','op',1.6),tl('c','whole words','ok',4.4)],''),R([tl('d','syntax','mod',3),tl('e','✗','op',1.6),tl('f','parts of words','bad',5)],''))},
+ {type:'stage',cap:`Defining “word” matters. If integrity held over the <i>prosodic</i> word, clitics could not move. So it is stated over the <b>morphosyntactic word</b>, and a clitic and its host are separate words.`,
+  spec:S(R([W('a','prosodic word','stem'),],'clitic + host'),R([W('b','host','stem'),tl('c','=clitic','var',3.4)],'two morphosyntactic words'))},
+ {type:'stage',cap:`Hungarian <i>meg-old</i> ‘solve’ is one word (meg-old-ás ‘solution’), yet <i>meg</i> can be separated: <i>nem oldotta meg</i>. Not necessarily a violation: if meg and the verb occupy separate syntactic nodes, integrity holds.`,
+  spec:S(R([W('a','meg-old-ott-a','stem')],'Pál megoldotta ‘solved’'),R([W('b','nem old-ott-a','stem'),W('c','meg','mod')],'Pál nem oldotta meg ‘did not solve’'))},
+ {type:'stage',cap:`Cases widely seen as problematic involve syntactic <b>agreement</b>: in Southern Tiwa, a verb prefix agrees with the number of the incorporated noun inside the verb.`,
+  spec:S(R([tl('a','ti-','aff',1.6),W('b','khwian','stem'),W('c','mu-ban','stem')],'ti-khwian-mu-ban: ‘I saw the dog’'),R([tl('d','bi-','mod',1.6),W('e','khwian','stem'),W('f','mu-ban','stem')],'bi-khwian-mu-ban: ‘I saw dogs’'))},
+ {type:'stage',cap:`Upper Sorbian: the adjective <i>mojeho</i> agrees with the root <i>muž</i> inside the adjective <i>mužowa</i>. And Udi has a clitic =ne that sits inside a two-part verb stem.`,
+  spec:S(R([W('a','moj-eho','mod'),W('b','muž-ow-a','stem'),W('c','sotra','stem')],'‘my husband’s sister’ (agreement with muž)'),R([W('d','bu.γa','stem'),tl('e','=ne','var',1.8),W('f','-b-e','stem')],'Udi: a clitic inside the verb'))},
+ {type:'widget',cap:`Which cases fit lexical integrity? Some are debatable, so I mark them as such.`,
+  build:b=>sort3Widget(b,[
+   ['English *Flying Ø and small fish (no ellipsis in compounds)','ok','Syntactic ellipsis cannot target a part of a word.'],
+   ['English =’s moving independently of its host','ok','The clitic and host are separate morphosyntactic words.'],
+   ['Hungarian meg separated from oldotta','dbt','Only a violation if meg and the verb are one syntactic unit; separate syntactic nodes avoid it.'],
+   ['Southern Tiwa agreement with the incorporated noun','prob','Syntactic agreement seems to reach inside a word.'],
+   ['Upper Sorbian mojeho agrees with muž inside mužowa','prob','Agreement between a word and a part of another word.'],
+   ['Udi =ne inside a bimorphemic verb','prob','Syntax places a clitic at a morpheme boundary inside the verb.']],
+   {ok:'Consistent',dbt:'Debatable',prob:'Problematic'})},
+ {type:'stage',cap:`Where does integrity come from? Perhaps it is an axiom of Universal Grammar, or follows from other constraints, or, most commonly, from the <b>architecture</b>: morphology delivers finished words and syntax cannot look inside. Extreme syntactic approaches reject it altogether.`,
+  spec:S(R([tl('a','morphology','aff',4),tl('b','→ words →','op',3.4),tl('c','syntax','mod',3)],'separate components'))},
+ {type:'quiz',cap:'Check yourself.',qs:[Q.l1,Q.l2,Q.l3,Q.l4]}
+]},
+{title:'Exercises',steps:[
+ {type:'quiz',cap:`Exercise 2 and 4. The book gives no key, so these are my analyses.`,qs:[Q.x2,Q.x4]},
+ {type:'quiz',cap:`Exercise 3: what is wrong with each sentence? My analyses.`,qs:[Q.x31,Q.x32,Q.x33,Q.x34]},
+ {type:'stage',cap:`Exercise 5: Lithuanian reflexive <i>s(i)</i>. It looks like an affix: it attaches only to verbs. It looks like a clitic: its position varies, after the verb (supasi) but between ne- and the verb (nesisupa). A contradiction between criteria again. My analysis.`,
+  spec:S(R([W('a','supa','stem'),tl('b','si','aff',1.4)],'supasi: after the verb'),R([tl('c','ne','aff',1.4),tl('d','si','var',1.4),W('e','supa','stem')],'nesisupa: before the verb'))},
+ {type:'widget',cap:`That is chapter 9. Here is what to take away.`,build:summaryWidget}
+]}
+];
+Lesson.start({label:'Chapter 9 · Words and phrases',sections:SECTIONS});
+</script>
+</body>
+</html>
