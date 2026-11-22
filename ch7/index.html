@@ -1,1 +1,262 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>Chapter 7 · Morphological trees · Understanding Morphology</title>
+<link rel="stylesheet" href="../assets/lesson.css">
+</head>
+<body>
+<script src="../assets/lesson.js"></script>
+<script>
+const {el,seg,T,tl,R,S,chg,mark,strip,shuffle,Stage,app,quizWidget,labWidget,sort3Widget}=Lesson;
+const mq=(id,q,right,wrongs,w)=>({id,q,o:[right,...wrongs],a:0,w});
+const wd=s=>s.length*.46+.9;
+const D='mod',H='stem'; /* dependent = pink, head = blue */
 
+/* ---------- Bracketing explorer (hierarchical structure in compounds) ---------- */
+function bracketEx(name,words,inner,outer,desc,extra){
+  const tiles=(k)=>words.map((w,i)=>tl('w'+i,w,k?k[i]:'stem',wd(w)));
+  const kinds=words.map(()=>D);kinds[words.length-1]=H;
+  const br=(lvls)=>lvls.map((b,i)=>({id:name+i,from:b[0],to:b[1],label:b[2]||'',lvl:i+1}));
+  return {name,lang:'Tap “Group the words” to build the tree from the inside out.',desc,
+    a:S(R(tiles(),'flat: just a list of nouns')),
+    b:S(R(tiles(kinds),'head = last word (blue)',br([inner,outer])))};
+}
+const BRK=[
+ bracketEx('Berkeley Linguistics Society',['Berkeley','Linguistics','Society'],[1,2,'compound'],[0,2,'compound'],
+   `<span class="w">[Berkeley [Linguistics Society]]</span><br>A kind of <i>linguistics society</i>: one founded at Berkeley. Linguistics and Society join first.`),
+ bracketEx('particle physics conference',['particle','physics','conference'],[0,1,'compound'],[0,2,'compound'],
+   `<span class="w">[[particle physics] conference]</span><br>A conference <i>about particle physics</i>. Here the first two words join first.`),
+ bracketEx('nuclear power station (A)',['nuclear','power','station'],[0,1,'compound'],[0,2,'compound'],
+   `<span class="w">[[nuclear power] station]</span><br>A station for <i>nuclear power</i>. Nuclear power is an English compound.`),
+ bracketEx('nuclear power station (B)',['nuclear','power','station'],[1,2,'compound'],[0,2,'compound'],
+   `<span class="w">[nuclear [power station]]</span><br>A <i>nuclear</i> kind of <i>power station</i>. Power station is also an English compound, so both groupings make sense.`),
+ bracketEx('Indiana University Linguistics Club',['Indiana','University','Linguistics','Club'],[0,1,'compound'],[0,3,'compound'],
+   `<span class="w">[[Indiana University] [Linguistics Club]]</span><br>With four members there are two inner compounds. Each inner compound has its own head: <i>University</i> and <i>Club</i>. The whole compound takes the head of its right-hand part, <i>Club</i>.`)
+];
+/* the four-member example needs two inner brackets at level 1: build by hand */
+BRK[4]={name:'Indiana University Linguistics Club',lang:'Two small compounds join into one big one.',
+ desc:BRK[4].desc,
+ a:S(R(['Indiana','University','Linguistics','Club'].map((w,i)=>tl('w'+i,w,'stem',wd(w))),'flat: four nouns')),
+ b:S(R([tl('w0','Indiana',D,wd('Indiana')),tl('w1','University',H,wd('University')),tl('w2','Linguistics',D,wd('Linguistics')),tl('w3','Club',H,wd('Club'))],
+   'each compound has its own head',
+   [{id:'i1',from:0,to:1,label:'compound',lvl:1},{id:'i2',from:2,to:3,label:'compound',lvl:1},{id:'i3',from:0,to:3,label:'compound',lvl:2}]))};
+
+/* ---------- Compound types ---------- */
+const CTYPES=[
+ {name:'lipstick',lang:'Endocentric · English',desc:`<span class="w">lipstick</span> is a kind of <i>stick</i>, not a kind of lip. The first member narrows the second. The <b>semantic head</b> (stick) is inside the compound.`,
+  a:S(R([tl('a','lip','stem',wd('lip')+1),tl('b','stick','stem',wd('stick')+1)],'two lexemes')),
+  b:S(R([tl('a','lip',D,wd('lip')+1),tl('b','stick',H,wd('stick')+1)],'dependent + head'))},
+ {name:'hombre-rana',lang:'Endocentric · Spanish (head first)',desc:`<span class="w">hombre-rana</span> ‘frogman’ is a kind of <i>man</i>. In Spanish the head is the <b>first</b> member; in English it is always the second.`,
+  a:S(R([tl('a','hombre','stem',wd('hombre')+1),tl('b','rana','stem',wd('rana')+1)],'man + frog')),
+  b:S(R([tl('a','hombre',H,wd('hombre')+1),tl('b','rana',D,wd('rana')+1)],'head + dependent'))},
+ {name:'hēdúoinos',lang:'Exocentric · Ancient Greek',desc:`<span class="w">hēdúoinos</span> ‘having sweet wine’ denotes a <i>person</i>, not a kind of wine or of sweet. No morpheme means ‘person’: the head is <b>outside</b> the compound. English has a few: redhead, highbrow, lazybones.`,
+  a:S(R([tl('a','hēdú-','stem',wd('hēdú-')+1),tl('b','oinos','stem',wd('oinos')+1)],'sweet + wine')),
+  b:S(R([tl('a','hēdú-',D,wd('hēdú-')+1),tl('b','oinos',D,wd('oinos')+1),tl('c','someone with','var',wd('someone with')+1,{enter:'right'})],'the meaning “someone who has…” is not expressed anywhere'))},
+ {name:'lavapiatti',lang:'Exocentric · Italian V + N',desc:`<span class="w">lavapiatti</span> ‘dishwasher’ is neither a kind of washing nor a kind of dish. The external head is an <b>instrument</b> that washes dishes. English pickpocket and killjoy are similar, but refer to people.`,
+  a:S(R([tl('a','lava','stem',wd('lava')+1),tl('b','piatti','stem',wd('piatti')+1)],'wash + dishes')),
+  b:S(R([tl('a','lava',D,wd('lava')+1),tl('b','piatti',D,wd('piatti')+1),tl('c','instrument for','var',wd('instrument for')+1,{enter:'right'})],'meaning added by the pattern as a whole'))},
+ {name:'son-pal',lang:'Coordinative · Korean',desc:`<span class="w">son-pal</span> ‘hand and foot’. Both members are equal, each with its own referent, so the compound has <b>two</b> semantic heads. Rare in European languages, widespread elsewhere.`,
+  a:S(R([tl('a','son','stem',wd('son')+1),tl('b','pal','stem',wd('pal')+1)],'hand + foot')),
+  b:S(R([tl('a','son',H,wd('son')+1),tl('x','and','op',1.2),tl('b','pal',H,wd('pal')+1)],'both are heads'))},
+ {name:'poeta-pintor',lang:'Appositional · Spanish',desc:`<span class="w">poeta-pintor</span> ‘poet who is also a painter’. Both members have the <b>same</b> referent: one person is both. English: student worker, bitter-sweet, deaf-mute.`,
+  a:S(R([tl('a','poeta','stem',wd('poeta')+1),tl('b','pintor','stem',wd('pintor')+1)],'poet + painter')),
+  b:S(R([tl('a','poeta',H,wd('poeta')+1),tl('x','=','op',.9),tl('b','pintor',H,wd('pintor')+1)],'one person is both'))},
+ {name:'rgan-gžon',lang:'Exocentric, equal members · Classical Tibetan',desc:`<span class="w">rgan-gžon</span> ‘age’ from ‘old’ + ‘young’. Like a coordinative compound the members are equal, but the head is something like <b>‘property’</b>, which is outside the compound.`,
+  a:S(R([tl('a','rgan','stem',wd('rgan')+1),tl('b','gžon','stem',wd('gžon')+1)],'old + young')),
+  b:S(R([tl('a','rgan',D,wd('rgan')+1),tl('b','gžon',D,wd('gžon')+1),tl('c','property of','var',wd('property of')+1,{enter:'right'})],'“age”: the property of old and young'))}
+];
+
+/* ---------- Where the head shows: locus, word class, gender, class ---------- */
+const HEADEX=[
+ {name:'lipsticks',lang:'Plural on the head · English',desc:`The plural goes on <i>stick</i>. The book analyses it as lip + stick-s: plurality is a property of the head.`,
+  a:S(R([tl('a','lip',D,wd('lip')+1),tl('b','stick',H,wd('stick')+1)],'singular')),
+  b:S(R([tl('a','lip',D,wd('lip')+1),tl('b','stick',H,wd('stick')+1),tl('c','s','aff',1,{enter:'right'})],'plural: marked on the head'))},
+ {name:'años luz',lang:'Plural on the head · Spanish (left-headed)',desc:`<span class="w">años luz</span> ‘light years’. If the plural belonged to the whole compound we would expect <i>*año luz-es</i>. The plural is on <i>año</i>, the head. This is the book’s evidence for the head as locus.`,
+  a:S(R([tl('a','año',H,wd('año')+1),tl('b','luz',D,wd('luz')+1)],'año luz ‘light year’')),
+  b:S(R([tl('a','año',H,wd('año')+1),tl('s','s','aff',1,{enter:'top'}),tl('b','luz',D,wd('luz')+1)],'años luz: plural on the head'))},
+ {name:'church mice',lang:'Head decides inflection class · English',desc:`<span class="w">church mice</span>, not <i>*church mouses</i>. The plural is formed the way the head noun forms it.`,
+  a:S(R([tl('a','church',D,wd('church')+1),tl('m','mouse',H,wd('mouse')+1)],'singular')),
+  b:S(R([tl('a','church',D,wd('church')+1),tl('m','mice',H,wd('mice')+1)],'plural: as for mouse'))},
+ {name:'babysits',lang:'Head decides word class · English',desc:`<span class="w">babysits</span> is a verb because its head <i>sit</i> is a verb, even though <i>baby</i> is a noun.`,
+  a:S(R([tl('a','baby',D,wd('baby')+1,{sub:'N'}),tl('b','sit',H,wd('sit')+1,{sub:'V'})],'noun + verb')),
+  b:S(R([tl('a','baby',D,wd('baby')+1,{sub:'N'}),tl('b','sit',H,wd('sit')+1,{sub:'V'}),tl('c','s','aff',1,{enter:'right'})],'the whole is a verb: V.3SG'))},
+ {name:'Luftpirat',lang:'Head decides gender and class · German',desc:`<span class="w">Luftpirat</span> ‘hijacker’: <i>Luft</i> is feminine, but the compound is masculine like <i>Pirat</i>. Both Pirat and Luftpirat are ‘weak’ nouns (genitive -en).`,
+  a:S(R([tl('a','Luft',D,wd('Luft')+1,{sub:'F'}),tl('b','Pirat',H,wd('Pirat')+1,{sub:'M'})],'feminine + masculine')),
+  b:S(R([tl('r','Luftpirat','lex',wd('Luftpirat')+1,{sub:'M'})],'masculine, weak: copied from the head'))}
+];
+
+/* ---------- Derived heads ---------- */
+const DERIV=[
+ {name:'readable',lang:'Suffix head · English',desc:`<span class="w">read-able</span>: verb → adjective. Since the head determines word class, -able is treated as an adjective, and the whole is an adjective.`,
+  a:S(R([tl('a','read','stem',wd('read')+1,{sub:'V'})],'base')),
+  b:S(R([tl('a','read','stem',wd('read')+1,{sub:'V'}),tl('b','able','lex',wd('able')+1,{sub:'A',enter:'right'})],'A: the suffix is the head'))},
+ {name:'carstvo',lang:'Suffix head · Russian',desc:`<span class="w">car-stvo</span> ‘czardom’ is a noun because of <i>-stvo</i>. The suffix also gives neuter gender and the o-declension.`,
+  a:S(R([tl('a','carʹ','stem',wd('carʹ')+1,{sub:'M'})],'base: masculine noun')),
+  b:S(R([tl('a','carʹ','stem',wd('carʹ')+1,{sub:'M'}),tl('b','stvo','lex',wd('stvo')+1,{sub:'N',enter:'right'})],'neuter noun: from the suffix'))},
+ {name:'awansować',lang:'Suffix head · Polish',desc:`<span class="w">awans-ować</span> ‘promote’: noun → verb. The suffix gives the word class (V) and the inflection class (-owa/-uj conjugation).`,
+  a:S(R([tl('a','awans','stem',wd('awans')+1,{sub:'N'})],'base: noun')),
+  b:S(R([tl('a','awans','stem',wd('awans')+1,{sub:'N'}),tl('b','ować','lex',wd('ować')+1,{sub:'V',enter:'right'})],'verb: the suffix is the head'))},
+ {name:'delouse',lang:'Prefix head · English',desc:`<span class="w">de-louse</span>: here the prefix is a verb-forming head (Figure 7.5 in the book). But prefixes like <i>co-</i> do <b>not</b> change word class, so they are not heads.`,
+  a:S(R([tl('a','louse','stem',wd('louse')+1,{sub:'N'})],'base: noun')),
+  b:S(R([tl('p','de-','lex',wd('de-')+1,{sub:'V',enter:'left'}),tl('a','louse','stem',wd('louse')+1,{sub:'N'})],'verb'))}
+];
+
+/* ---------- Table 7.1 ---------- */
+function headTable(box){
+  const rows=[
+   ['Dependent narrows meaning','+','+','–',`In <i>doghouse</i> and <i>house for a dog</i> the dependent narrows the head. For affixes it does not: <i>reality</i> is not a kind of <i>-ity</i>, and something yellowish is not a kind of <i>-ish</i>.`],
+   ['Morphosyntactic locus','+','+','(+)',`The head carries the inflection for the whole: the tense on the Russian verb, the plural on <i>sticks</i>. For derived words it is only partly applicable, and not at all for non-concatenative patterns like Arabic <i>ḥammaal</i> ‘carrier’.`],
+   ['Government','+','–','–',`A head requires a form of its dependent. A compound’s dependent is an uninflected stem, so there is no form to govern.`],
+   ['Agreement','+','–','–',`A dependent copies features from its head. Again a stem has no inflection to agree with. (In coordinative compounds the plural may even appear twice: <i>actores-bailarines</i>.)`]];
+  const tb=el('table','tb');
+  tb.innerHTML='<tr><th style="text-align:left">Head property</th><th>Syntax</th><th>Compound</th><th>Derived</th></tr>';
+  const res=el('div','res','Tap a row for the explanation.');
+  const col=s=>`<td style="text-align:center;font-weight:800;color:var(--${s[0]==='–'?'bad':'ok'})">${s}</td>`;
+  rows.forEach(r=>{const tr=el('tr','row');tr.innerHTML=`<td>${r[0]}</td>${col(r[1])}${col(r[2])}${col(r[3])}`;
+    tr.onclick=()=>{[...tb.querySelectorAll('tr.row')].forEach(x=>x.classList.remove('on'));tr.classList.add('on');res.innerHTML=r[4];};tb.append(tr);});
+  box.append(tb,res);
+}
+
+/* ---------- Summary ---------- */
+function summaryWidget(box){
+  box.append(el('ul','pts',`
+   <li><b>Compounds</b> join lexeme <i>stems</i>. Types: endocentric, exocentric, coordinative, appositional (and exocentric with equal members, like Tibetan).</li>
+   <li><b>Trees</b> show hierarchical grouping and the <b>formal head</b>, which is the locus of inflection and decides word class, gender and inflection class.</li>
+   <li><b>Derived words</b> also get trees. They show scope (undoable, Capanahua) and suffixes as heads, but prefixes and diminutives are often non-heads.</li>
+   <li><b>Syntax comparison:</b> compounds share only the locus property with syntactic heads, with no government or agreement. Derivation is weaker still.</li>
+   <li>So the parallels are <b>partial</b>, which suggests word formation is at least partly distinct from sentence formation. The degree of separation is still debated.</li>`));
+  let tot=0,good=0;const rows=[];
+  SECTIONS.forEach(s=>{let n=0,g=0;s.steps.forEach(st=>{if(st.type==='quiz')st.qs.forEach(q=>{n++;if(app.score[q.id])g++;});});
+    if(n){tot+=n;good+=g;rows.push(`<li>${s.title}: <b>${g}/${n}</b></li>`);}});
+  box.append(el('p','res',`<b>Quiz results (first try): ${good} of ${tot}</b><ul class="pts">${rows.join('')}</ul>`));
+}
+
+/* ---------- Questions ---------- */
+const Q={
+ t1:mq('t1','In English lipstick, which member is the semantic head?','stick',['lip','Both members','Neither: it is exocentric'],'The first member narrows the second: a lipstick is a kind of stick.'),
+ t2:mq('t2','Why do we say child support, not *children support, even for several children?','Compounds combine lexeme stems, not inflected word-forms',['English forbids plurals in compounds','Children is irregular','Support is a verb'],'Compounding works on stems, like derivational affixes. (Inflected first members exist, like publications list, but are uncommon.)'),
+ t3:mq('t3','German Waschmaschine: why is wasch- called a pure stem?','Nearly all verb forms have a suffix, and the imperative reading makes no sense here',['It is the infinitive','It is the past tense','It is an interfix'],'Wasch-en has the infinitive suffix -en. Only the imperative is suffixless, but a “wash!” machine would be absurd.'),
+ t4:mq('t4','Ancient Greek hēdúoinos ‘having sweet wine’ is…','Exocentric',['Endocentric','Coordinative','Appositional'],'It refers to a person who has sweet wine, not to a kind of wine. The head is outside the compound.'),
+ t5:mq('t5','Korean son-pal ‘hand and foot’ is…','Coordinative: two semantic heads',['Endocentric with head son','Endocentric with head pal','Exocentric with a hidden head'],'Each member has its own referent and the compound can be paraphrased with “and”.'),
+ h1:mq('h1','Spanish años luz ‘light years’ has -s on año. What does this support?','The plural is expressed on the morphological head',['Plural belongs to the whole compound','Luz is the head','Spanish compounds have no head'],'If the plural attached to the entire compound we would expect *año luz-es.'),
+ h2:mq('h2','German Luft (fem.) + Pirat (masc.) gives Luftpirat. Why masculine?','Gender comes from the head Pirat',['The first member wins','Compounds are always masculine','The interfix decides'],'The formal head determines word class, gender and inflection class for the whole compound.'),
+ h3:mq('h3','Which grouping fits particle physics conference?','[[particle physics] conference]',['[particle [physics conference]]','[particle physics conference] with no structure','[[particle] [physics] conference]'],'It is a conference about particle physics.'),
+ h4:mq('h4','What is the plural of church mouse?','church mice',['church mouses','churches mouse','churches mice'],'The head decides how the compound forms its plural.'),
+ h5:mq('h5','The exocentric sabretooth has the plural sabretooths, not sabreteeth. Why?','No head inside the compound to carry the plural, so the plural attaches to the whole',['English forbids irregular plurals in compounds','Sabretooth is coordinative','Tooth is a verb here'],'It denotes a tiger, not a kind of tooth, so the normal head pattern does not apply. (Blackfoot/Blackfeet shows variation.)'),
+ d1:mq('d1','In undoable ‘cannot be done’, what is built first?','doable (do + -able), then un-',['undo (un + do), then -able','All three at once','Un- and -able together, then do'],'The negative prefix has scope over doable: [un [do able]].'),
+ d2:mq('d2','Capanahua pi-ma-catsih- ‘eat-CAUS-DESID’ means ‘want to make eat’. Why?','Desiderative has scope over the base pi-ma-',['Causative has scope over desiderative','The suffixes are unordered','Pi- is the head'],'The outer suffix modifies the whole base inside it. Reversing the order reverses the scope.'),
+ d3:mq('d3','Why is readable an adjective in the head-based analysis?','-able belongs to the adjective class and is the head',['Read is an adjective','Adjectives are the default','The prefix decides'],'The head determines word class, and derivational suffixes are treated as heads.'),
+ d4:mq('d4','Which of these is NOT a head?','English co- (co-author, co-exist)',['Russian -stvo','Polish -ować','English -able'],'Co- attaches to nouns, adjectives and verbs and leaves their word class unchanged.'),
+ s1:mq('s1','Which syntactic head property do compounds share?','Morphosyntactic locus',['Government','Agreement','All three properties'],'The head carries the inflection for the whole. Government and agreement are not observable in compounds.'),
+ s2:mq('s2','Why can’t government and agreement apply inside compounds?','The dependent is an uninflected stem',['Compounds have no head','Heads are always outside','Compounds are always exocentric'],'Government and agreement need an inflected dependent word-form.'),
+ s3:mq('s3','What do the parallels with syntax suggest overall?','They are only partial, so word formation is at least partly distinct from syntax',['Morphology and syntax are identical','Words have no internal structure','Derivation is more syntax-like than compounding'],'Compounds share only some head properties, derived words even fewer. The exact degree of separation is still debated.'),
+ x3:mq('x3','Spanish inmovilizable has two readings. For ‘unmobilizable’, what is the structure?','[in [[móvil iz] able]]',['[[[in móvil] iz] able]','[[in móvil] [iz able]]','[in móvil iz able] with no structure'],'In ‘unmobilizable’ the prefix negates mobilizable; in ‘immobilizable’ the prefix attaches to móvil first (immobile → immobilize → -able).')
+};
+
+const SECTIONS=[
+{title:'Compounding types',steps:[
+ {type:'stage',cap:`A <b>compound</b> is a complex lexeme made of two or more base lexemes, its <b>members</b>. English allows many word-class combinations: N+N is very productive; V+N and N+V are not.`,
+  spec:S(R([tl('a','lip','stem',2,{sub:'N'}),tl('b','stick','stem',2.6,{sub:'N'})],'lipstick  N + N'),R([tl('c','draw','stem',2.2,{sub:'V'}),tl('d','bridge','stem',3,{sub:'N'})],'drawbridge  V + N'),R([tl('e','bitter','stem',3,{sub:'A'}),tl('f','sweet','stem',2.8,{sub:'A'})],'bitter-sweet  A + A'))},
+ {type:'stage',cap:`Compounds join <b>stems</b>, not inflected word-forms. It is <i>lipstick</i>, not <i>*lipsstick</i>, even though both lips are used.`,
+  spec:S(R([tl('a','lips','ghost',2.4),tl('b','stick','stem',2.6)],'*lipsstick'),R([tl('c','lip','stem',2),tl('d','stick','stem',2.6)],'lipstick'))},
+ {type:'stage',cap:`In richer inflection this is clear. German often inserts an empty <b>interfix</b> that makes the right stem for compounding.`,
+  spec:S(R([tl('a','Volk','stem',2.6),tl('b','s','aff',1,{enter:'top'}),tl('c','wagen','stem',2.8)],'Volkswagen: ‘people’s car’'),R([tl('d','Schwan','stem',3.2),tl('e','en','aff',1.4,{enter:'top'}),tl('f','gesang','stem',3.2)],'Schwanengesang: ‘swansong’'))},
+ {type:'stage',cap:`Likewise German V+N compounds use the pure verb stem. Wasch- is not the infinitive (waschen) and would be odd as an imperative.`,
+  spec:S(R([tl('a','wasch','stem',3),tl('b','maschine','stem',4)],'Waschmaschine: ‘washing machine’'),R([tl('c','en','ghost',1.4)],'the infinitive suffix is not there'))},
+ {type:'stage',cap:`Some languages let an object join the verb: <b>noun incorporation</b>. English cannot say <i>to hair-wash</i>, but Alutor can say ‘hand-wash’.`,
+  spec:S(R([tl('a','tə-','aff',1.4),tl('b','məng','stem',2.2),tl('c','-ilgətav','stem',3.2),tl('d','-ək','aff',1.4)],'Alutor: 1sg – hand – wash – 1sg'),R([tl('e','‘I washed (my) hands’','plain',8)],''))},
+ {type:'widget',cap:`Types of compound by <b>semantic head</b>. Tap each example, then show where the head is.`,build:b=>labWidget(b,CTYPES,'Show the head','Back')},
+ {type:'quiz',cap:'Check yourself.',qs:[Q.t1,Q.t2,Q.t3,Q.t4,Q.t5]}
+]},
+{title:'Heads in compounds',steps:[
+ {type:'stage',cap:`Compounds can contain compounds. A <b>tree</b> shows which members group first. Take <i>Berkeley Linguistics Society</i>: three flat nouns…`,
+  spec:S(R([tl('w0','Berkeley','stem',wd('Berkeley')),tl('w1','Linguistics','stem',wd('Linguistics')),tl('w2','Society','stem',wd('Society'))],'three nouns'))},
+ {type:'stage',cap:`…but Linguistics Society goes together first: a kind of linguistics society. The inner compound has its own head, Society.`,
+  spec:S(R([tl('w0','Berkeley','stem',wd('Berkeley')),tl('w1','Linguistics',D,wd('Linguistics')),tl('w2','Society',H,wd('Society'))],'inner compound',[{id:'g1',from:1,to:2,label:'compound',lvl:1}]))},
+ {type:'stage',cap:`Then Berkeley modifies the whole thing: a society at Berkeley. Society is the head of both levels.`,
+  spec:S(R([tl('w0','Berkeley',D,wd('Berkeley')),tl('w1','Linguistics',D,wd('Linguistics')),tl('w2','Society',H,wd('Society'))],'head: Society',[{id:'g1',from:1,to:2,label:'compound',lvl:1},{id:'g2',from:0,to:2,label:'compound',lvl:2}]))},
+ {type:'widget',cap:`Try the grouping yourself. Some compounds allow two structures at once, like <i>nuclear power station</i>.`,build:b=>labWidget(b,BRK,'Group the words','Back')},
+ {type:'stage',cap:`The <b>formal head</b> is the morphosyntactic locus: it carries the inflection for the whole compound. The plural of lipstick is on stick.`,
+  spec:S(R([tl('a','lip',D,wd('lip')+1),tl('b','stick',H,wd('stick')+1),tl('c','s','aff',1)],'lipsticks: -s marks the head'))},
+ {type:'stage',cap:`An alternative is [[lip][stick]]s, plural on the whole compound. It works for lipsticks, but not for left-headed Spanish: <i>año luz</i> gives <i>años luz</i>, not <i>*año luz-es</i>.`,
+  spec:S(R([tl('a','año',H,wd('año')+1),tl('s','s','aff',1),tl('b','luz',D,wd('luz')+1)],'años luz ✓'),R([tl('c','año','stem',wd('año')+1),tl('d','luz','stem',wd('luz')+1),tl('e','es','bad',1.4)],'*año luz-es ✗'))},
+ {type:'widget',cap:`The head also decides <b>word class, gender and inflection class</b>. Tap through the cases.`,build:b=>labWidget(b,HEADEX,'Apply','Back')},
+ {type:'stage',cap:`Non-endocentric compounds do not behave this way. In coordinative compounds the plural may show on both members, and exocentric sabretooth is plural <i>sabretooths</i>.`,
+  spec:S(R([tl('a','actores','stem',wd('actores')+1),tl('b','bailarines','stem',wd('bailarines')+1)],'actores-bailarines: double plural'),R([tl('c','sabretooth','stem',wd('sabretooth')+1),tl('d','s','aff',1)],'sabretooths, not sabreteeth'))},
+ {type:'quiz',cap:'Check yourself.',qs:[Q.h1,Q.h2,Q.h3,Q.h4,Q.h5]}
+]},
+{title:'Trees in derived words',steps:[
+ {type:'stage',cap:`Derived lexemes get trees too. <i>Undoable</i> has two meanings. First: ‘cannot be done’. The prefix attaches to doable…`,
+  spec:S(R([tl('a','un','aff',1.8),tl('b','do','stem',1.8),tl('c','able','aff',2.4)],'undoable₁: ‘cannot be done’',[{id:'b1',from:1,to:2,label:'doable',lvl:1},{id:'b2',from:0,to:2,label:'undoable',lvl:2}]))},
+ {type:'stage',cap:`Second: ‘can be undone’. Now the prefix attaches to the verb do first, and -able is added to undo. Same pieces, different tree, different meaning.`,
+  spec:S(R([tl('a','un','aff',1.8),tl('b','do','stem',1.8),tl('c','able','aff',2.4)],'undoable₂: ‘can be undone’',[{id:'b1',from:0,to:1,label:'undo',lvl:1},{id:'b2',from:0,to:2,label:'undoable',lvl:2}]))},
+ {type:'stage',cap:`Order of affixes matters too. In Capanahua, <b>-ma</b> (causative) attaches to pi-catsih- ‘want to eat’, so the result is ‘make (him) want to eat’.`,
+  spec:S(R([tl('a','pi','stem',1.6),tl('b','-catsih','aff',3),tl('c','-ma','aff',1.8)],'pi-catsih-ma: ‘make him hungry’',[{id:'b1',from:0,to:1,label:'want to eat',lvl:1},{id:'b2',from:0,to:2,label:'make [want to eat]',lvl:2}]))},
+ {type:'stage',cap:`Reverse the suffixes and the scope reverses: -catsih (desiderative) now covers pi-ma- ‘make eat’, giving ‘want to make eat’. The outer affix has <b>semantic scope</b> over everything inside.`,
+  spec:S(R([tl('a','pi','stem',1.6),tl('b','-ma','aff',1.8),tl('c','-catsih','aff',3)],'pi-ma-catsih: ‘he wants to feed it’',[{id:'b1',from:0,to:1,label:'make eat',lvl:1},{id:'b2',from:0,to:2,label:'want to [make eat]',lvl:2}]))},
+ {type:'widget',cap:`Derivational suffixes are often treated as <b>heads</b>: they decide word class, gender and inflection class. Tap the examples.`,build:b=>labWidget(b,DERIV,'Add the affix','Back')},
+ {type:'stage',cap:`But not all affixes are heads. Prefixes and diminutive suffixes often leave the word class unchanged: <i>co-author, co-extensive, co-exist</i> are noun, adjective and verb.`,
+  spec:S(R([tl('a','co-','aff',1.6),tl('b','author','stem',3,{sub:'N'})],'noun'),R([tl('c','co-','aff',1.6),tl('d','extensive','stem',3.6,{sub:'A'})],'adjective'),R([tl('e','co-','aff',1.6),tl('f','exist','stem',2.8,{sub:'V'})],'verb'))},
+ {type:'widget',cap:`Does the affix determine word class (a head) or not?`,
+  build:b=>sort3Widget(b,[['-able (read-able)','head','Makes adjectives from verbs, so it determines the word class.'],['-stvo (car-stvo)','head','Makes neuter nouns of the o-declension.'],['-ować (awans-ować)','head','Makes verbs and decides the conjugation class.'],['co- (co-author)','non','Attaches to nouns, adjectives and verbs and leaves the class unchanged.'],['pre- (Spanish pre-historia)','non','Likewise attaches to nouns, adjectives and verbs.'],['-ino (Italian tavol-ino)','non','Diminutive: ‘little table’ stays a noun; giall-ino is still an adjective.']],{head:'Head: sets word class',non:'Not a head'})},
+ {type:'quiz',cap:'Check yourself.',qs:[Q.d1,Q.d2,Q.d3,Q.d4]}
+]},
+{title:'Morphology and syntax',steps:[
+ {type:'stage',cap:`Big question: do the <b>same principles</b> build words and sentences? If heads in morphology resemble heads in syntax, there may be no separate morphological component. If not, there probably is one.`,
+  spec:S(R([tl('a','word structure','stem',5.2),tl('b','≟','op',1),tl('c','sentence structure','stem',6)],'compare formal heads'))},
+ {type:'stage',cap:`Three formal properties characterise syntactic heads: the head is the <b>locus</b> of inflection, may <b>govern</b> its dependents’ form, and may <b>agree</b> with a dependent. Here is a Russian sentence.`,
+  spec:S(R([tl('a','Student-y','stem',wd('Student-y')+1,{sub:'NOM.PL'}),tl('b','pomaga-l-i','stem',wd('pomaga-l-i')+1,{sub:'PST.PL'})],'‘The students helped…’'),R([tl('c','zavedujušč-ej','stem',wd('zavedujušč-ej')+1,{sub:'DAT'}),tl('d','kafedr-oj','stem',wd('kafedr-oj')+1,{sub:'INS'})],'…the chairwoman of the department’'))},
+ {type:'stage',cap:`<b>Locus:</b> the verb carries the tense for the whole clause, and each noun carries the case for its phrase.`,
+  spec:S(R([tl('a','Student-y','stem',wd('Student-y')+1,{sub:'NOM.PL'}),tl('b','pomaga-l-i','ok',wd('pomaga-l-i')+1,{sub:'PST.PL'})],'the verb is the locus of tense'),R([tl('c','zavedujušč-ej','stem',wd('zavedujušč-ej')+1,{sub:'DAT'}),tl('d','kafedr-oj','stem',wd('kafedr-oj')+1,{sub:'INS'})],''))},
+ {type:'stage',cap:`<b>Government:</b> the verb requires its object to be dative, and the noun zavedujuščej requires its complement to be instrumental.`,
+  spec:S(R([tl('a','Student-y','stem',wd('Student-y')+1,{sub:'NOM.PL'}),tl('b','pomaga-l-i','stem',wd('pomaga-l-i')+1,{sub:'PST.PL'})],''),R([tl('c','zavedujušč-ej','mod',wd('zavedujušč-ej')+1,{sub:'DAT'}),tl('d','kafedr-oj','mod',wd('kafedr-oj')+1,{sub:'INS'})],'case required by the head'))},
+ {type:'stage',cap:`<b>Agreement:</b> the verb agrees with its subject in number. Both are plural.`,
+  spec:S(R([tl('a','Student-y','copy',wd('Student-y')+1,{sub:'NOM.PL'}),tl('b','pomaga-l-i','copy',wd('pomaga-l-i')+1,{sub:'PST.PL'})],'plural matches'),R([tl('c','zavedujušč-ej','stem',wd('zavedujušč-ej')+1,{sub:'DAT'}),tl('d','kafedr-oj','stem',wd('kafedr-oj')+1,{sub:'INS'})],''))},
+ {type:'widget',cap:`Which of these properties do compounds and derived words show? Tap each row.`,build:headTable},
+ {type:'stage',cap:`The verdict: parallels are <b>partial</b>. Compounds show locus only. Derivation is weaker still, and non-concatenative derivation (Arabic ḥammaal ‘carrier’) has no clear head at all.`,
+  spec:S(R([tl('a','syntax','ok',3.4),tl('b','4 of 4','plain',3)],''),R([tl('c','compounds','mod',3.8),tl('d','2 of 4','plain',3)],''),R([tl('e','derivation','bad',3.8),tl('f','weak','plain',3)],''))},
+ {type:'quiz',cap:'Check yourself.',qs:[Q.s1,Q.s2,Q.s3]}
+]},
+{title:'Exercises',steps:[
+ {type:'widget',cap:`Exercise 2: Sanskrit compounds. What type is each? The book gives no answer key, so these are my analyses from the glosses.`,
+  build:b=>sort3Widget(b,[['aśvakovida- ‘knowledgeable about horses’','endo','Head kovida ‘knowledgeable’ is inside; aśva ‘horse’ narrows it.'],
+   ['bahuvrīhi- ‘having a lot of rice’','exo','The compound refers to a person who has rice, not a kind of rice.'],
+   ['divyarūpa- ‘having divine shape’','exo','Refers to something that has a divine shape, not to a kind of shape.'],
+   ['gṛhapati- ‘houseowner’','endo','A kind of lord (pati), specified by the house.'],
+   ['mahārāja- ‘great king’','endo','A kind of king, narrowed by ‘great’.'],
+   ['mahātman- ‘having a big soul’','exo','Refers to someone who has a big soul, not to a kind of soul.'],
+   ['priyasakhī- ‘dear friend’','endo','A kind of female friend, narrowed by ‘dear’.'],
+   ['rājarṣi- ‘poet who is also royalty’','app','Both members describe the same person.'],
+   ['śuklakṛṣṇa- ‘bright and dark’','coord','Two members, each with its own referent: ‘and’.'],
+   ['sukhaduḥkha- ‘joy and pain’','coord','Equal members joined by ‘and’.']],
+   {endo:'Endocentric',exo:'Exocentric',coord:'Coordinative',app:'Appositional'})},
+ {type:'stage',cap:`Exercise 3: Spanish <i>inmovilizable</i>, ‘unmobilizable’. The prefix <b>in-</b> negates the whole of <i>mobilizable</i>.`,
+  spec:S(R([tl('a','in','aff',1.6),tl('b','móvil','stem',2.8),tl('c','iz','aff',1.4),tl('d','able','aff',2.2)],'inmovilizable₁: ‘unmobilizable’',[{id:'b1',from:1,to:2,label:'mobilize',lvl:1},{id:'b2',from:1,to:3,label:'mobilizable',lvl:2},{id:'b3',from:0,to:3,label:'unmobilizable',lvl:3}]))},
+ {type:'stage',cap:`And ‘immobilizable’: in- attaches to móvil first (immobile), then -iz, then -able. Same string, different tree.`,
+  spec:S(R([tl('a','in','aff',1.6),tl('b','móvil','stem',2.8),tl('c','iz','aff',1.4),tl('d','able','aff',2.2)],'inmovilizable₂: ‘immobilizable’',[{id:'b1',from:0,to:1,label:'immobile',lvl:1},{id:'b2',from:0,to:2,label:'immobilize',lvl:2},{id:'b3',from:0,to:3,label:'immobilizable',lvl:3}]))},
+ {type:'quiz',cap:`A question on exercise 3.`,qs:[Q.x3]},
+ {type:'widget',cap:`Exercise 4: Russian exocentric A + N compounds, ‘having an N that is A’. Tap an example and combine the stems. The rule: adjective stem + linking -o- + noun stem + adjective ending -yj/-ij. This is my sketch, not the book’s notation.`,
+  build:b=>labWidget(b,RUS,'Form the compound','Back')},
+ {type:'widget',cap:`That is chapter 7. Here is what to take away.`,build:summaryWidget}
+]}
+];
+
+function rus(adj,ast,noun,nst,lnk,end,glossA,glossN,out){
+  return {name:out,lang:'Russian exocentric compound',
+   desc:`<span class="w">${out}</span> ‘having ${glossN} that is ${glossA}’. From <i>${adj}</i> ‘${glossA}’ and <i>${noun}</i> ‘${glossN}’. There is no morpheme for ‘having’: the rule as a whole supplies it.`,
+   a:S(R([tl('a1',adj,'stem',wd(adj)+1),tl('a2',noun,'stem',wd(noun)+1)],'adjective + noun')),
+   b:S(R([tl('a1',ast,D,wd(ast)+1,{from:'a1'}),tl('l',lnk,'aff',1.2,{enter:'top'}),tl('a2',nst,D,wd(nst)+1,{from:'a2'}),tl('e',end,'aff',1.4,{enter:'right'})],out))};
+}
+var RUS=[
+ rus('dlinnyj','dlinn','ruka','ruk','o','ij','long','arm','dlinnorukij'),
+ rus('krasnyj','krasn','boroda','borod','o','yj','red','beard','krasnoborodyj'),
+ rus('černyj','čern','koža','kož','o','ij','black','skin','černokožij'),
+ rus('tolstyj','tolst','noga','nog','o','ij','thick','leg','tolstonogij')
+];
+Lesson.start({label:'Chapter 7 · Morphological trees',sections:SECTIONS});
+</script>
+</body>
+</html>
