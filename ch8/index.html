@@ -1,1 +1,232 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>Chapter 8 · Inflectional paradigms · Understanding Morphology</title>
+<link rel="stylesheet" href="../assets/lesson.css">
+</head>
+<body>
+<script src="../assets/lesson.js"></script>
+<script>
+const {el,seg,T,tl,R,S,chg,mark,strip,shuffle,Stage,app,quizWidget,labWidget,sort3Widget}=Lesson;
+const mq=(id,q,right,wrongs,w)=>({id,q,o:[right,...wrongs],a:0,w});
+const wd=s=>s.length*.46+.9;
+const W=(id,t,k,x)=>tl(id,t,k||'stem',wd(t)+.6,x);
 
+/* ---------- Latin o-/u-declension (8.7) ---------- */
+const LAT=[['nom sg','-us','-us'],['acc sg','-um','-um'],['gen sg','-ī','-ūs'],['dat sg','-ō','-uī'],['abl sg','-ō','-ū'],
+ ['nom pl','-ī','-ūs'],['acc pl','-ōs','-ūs'],['gen pl','-ōrum','-uum'],['dat pl','-īs','-ibus'],['abl pl','-īs','-ibus']];
+function latinWidget(box){
+  const tb=el('table','tb');tb.innerHTML='<tr><th style="text-align:left">cell</th><th>hort-us (o)</th><th>grad-us (u)</th></tr>';
+  const res=el('div','res','Tap a cell. Does it tell the two classes apart?');
+  LAT.forEach(r=>{const same=r[1]===r[2];const tr=el('tr','row');
+    tr.innerHTML=`<td>${r[0]}</td><td style="text-align:center">${r[1]}</td><td style="text-align:center">${r[2]}</td>`;
+    tr.onclick=()=>{[...tb.querySelectorAll('tr.row')].forEach(x=>x.classList.remove('on'));tr.classList.add('on');
+      res.className='res '+(same?'bad':'good');
+      res.innerHTML=same?`<b>${r[0]}</b>: the ending is the same in both classes, so it has <b>no predictive value</b> for the class.`
+       :`<b>${r[0]}</b>: the endings differ, so this form <b>identifies the class</b>. The genitive singular is probably heard more often than the genitive plural, so it is the more useful predictor.`;};
+    tb.append(tr);});
+  box.append(tb,res);
+}
+const PREDICT=[
+ {name:'gen sg -ī',lang:'Predict the genitive plural',desc:`The genitive singular <b>-ī</b> belongs to the o-declension package, so the genitive plural must be <b>-ōrum</b>. There is no Latin noun with -ī and -uum.`,
+  a:S(R([W('a','hort-ī','stem'),tl('o','→','op',.8),W('b','?','var')],'gen sg → gen pl')),b:S(R([W('a','hort-ī','stem'),tl('o','→','op',.8),W('b','hort-ōrum','ok')],'o-declension package'))},
+ {name:'gen sg -ūs',lang:'Predict the genitive plural',desc:`The genitive singular <b>-ūs</b> belongs to the u-declension package, so the genitive plural must be <b>-uum</b>.`,
+  a:S(R([W('a','grad-ūs','stem'),tl('o','→','op',.8),W('b','?','var')],'gen sg → gen pl')),b:S(R([W('a','grad-ūs','stem'),tl('o','→','op',.8),W('b','grad-uum','ok')],'u-declension package'))}
+];
+
+/* ---------- Greek declensions (8.21) ---------- */
+const GK={cells:['nom.sg','acc.sg','gen.sg','nom.pl','acc.pl','gen.pl'],
+ cls:[['os','nomos','os,o,u,i,us,on'],['as','pateras','as,a,a,es,es,on'],['us','papus','us,u,u,uðes,uðes,uðon'],['a','imera','a,a,as,es,es,on'],['i1','texni','i,i,is,es,es,on'],['i2','poli','i,i,eos,is,is,eon'],['u','maimu','u,u,us,uðes,uðes,uðon']]};
+function greekWidget(box){
+  const tabs=el('div','tabs'),tb=el('table','tb'),res=el('div','res');box.append(tabs,tb,res);let c=0;
+  const pal=['--stem','--mod','--var','--ok','--bad'];
+  GK.cells.forEach((n,i)=>{const b=el('button','chip'+(i===0?' on':''),n);b.onclick=()=>{c=i;draw();};tabs.append(b);});
+  function draw(){[...tabs.children].forEach((b,i)=>b.classList.toggle('on',i===c));
+    const sfx=GK.cls.map(r=>r[2].split(',')[c]);const groups={};sfx.forEach((s,i)=>{(groups[s]=groups[s]||[]).push(GK.cls[i][0]);});
+    const keys=Object.keys(groups);tb.innerHTML='<tr><th style="text-align:left">class</th><th>example</th><th>suffix</th></tr>';
+    GK.cls.forEach((r,i)=>{const g=keys.indexOf(sfx[i]);const tr=el('tr');
+      tr.innerHTML=`<td>${r[0]}</td><td style="text-align:center">${r[1]}</td><td style="text-align:center;font-weight:800;background:color-mix(in srgb,var(${pal[g%5]}) 22%,transparent)">-${sfx[i]}</td>`;tb.append(tr);});
+    const shared=keys.filter(k=>groups[k].length>1).map(k=>`<b>-${k}</b> in ${groups[k].join(', ')}`);
+    res.innerHTML=`<b>${GK.cells[c]}</b>: ${keys.length} different suffixes across 7 classes. `+(shared.length?`Shared: ${shared.join('; ')}.`:'')+` Classes differ only slightly, which is what the hierarchy captures.`;}
+  draw();
+}
+
+/* ---------- Latin/Priscianic ---------- */
+const PRIS=[
+ {name:'laudāre',lang:'Priscianic formation · Latin ‘praise’',desc:`<span class="w">laudātus → laudātūrus</span>. The future active participle is the past passive participle with <b>-ūr</b> added. It cannot be built on it by meaning, only by form.`,
+  a:S(R([W('a','laudāt','stem'),W('b','us','aff')],'past passive participle')),b:S(R([W('a','laudāt','stem'),W('c','ūr','aff',{enter:'top'}),W('b','us','aff')],'future active participle'))},
+ {name:'mittere',lang:'Priscianic formation · Latin ‘send’',desc:`<span class="w">missus → missūrus</span>. The infinitive mittere and the participle stem miss- are related irregularly, but miss- → missūr- is regular.`,
+  a:S(R([W('a','miss','stem'),W('b','us','aff')],'past passive participle')),b:S(R([W('a','miss','stem'),W('c','ūr','aff',{enter:'top'}),W('b','us','aff')],'future active participle'))},
+ {name:'ferre',lang:'Priscianic formation · Latin ‘bear’',desc:`<span class="w">lātus → lātūrus</span>. Even with the suppletive stem lāt-, the second step is regular.`,
+  a:S(R([W('a','lāt','stem'),W('b','us','aff')],'past passive participle')),b:S(R([W('a','lāt','stem'),W('c','ūr','aff',{enter:'top'}),W('b','us','aff')],'future active participle'))},
+ {name:'mupin',lang:'Tümpisa Shoshoni · ‘nose’',desc:`<span class="w">mupitta → mupittan</span>. The possessive is always the objective plus <b>-n</b>. Describing this without Priscianic formation needs an invented “non-nominative stem”.`,
+  a:S(R([W('a','mupitta','stem')],'objective')),b:S(R([W('a','mupitta','stem'),W('n','n','aff',{enter:'right'})],'possessive: built on the objective'))}
+];
+/* ---------- Tagalog (exercise 1) ---------- */
+const TAG=[['langoy','lumangoy','lumangoy','‘swim’','-um-: perfective is the same as the basic form.'],
+ ['wagayway','wumagayway','wumagayway','‘wave’','-um-: perfective is the same as the basic form.'],
+ ['takot','matakot','natakot','‘be afraid’','ma-: m- becomes n-.'],
+ ['uhaw','mauhaw','nauhaw','‘be thirsty’','ma-: m- becomes n-.'],
+ ['buhat','buhatin','binuhat','‘raise’','-in: insert -in- after the first consonant and drop the final -in.'],
+ ['punit','punitin','pinunit','‘rip’','-in: insert -in- after the first consonant and drop the final -in.'],
+ ['punas','punasan','pinunasan','‘wipe’','-an: insert -in- after the first consonant (the -an stays).']]
+ .map(([r,b,p,g,why])=>({name:r,lang:'Tagalog ‘'+g.slice(1,-1)+'’',desc:`<span class="w">${b} → ${p}</span><br>${why} (My application of the rules in (8.11).)`,
+   a:S(R([tl('x',b,'stem',wd(b)+1)],'basic form')),b:S(R([tl('x',p,'mod',wd(p)+1)],'perfective'))}));
+
+/* ---------- Summary ---------- */
+function summaryWidget(box){
+  box.append(el('ul','pts',`
+   <li><b>Syntagmatic</b> relations link neighbours in a chain; <b>paradigmatic</b> relations link forms that contrast in one slot. The question is whether grammar needs the second kind.</li>
+   <li><b>Inflection classes</b> are packages of suppletive endings. They are assigned by phonology, meaning or morphology, are related to but distinct from gender, and differ in productivity.</li>
+   <li>Evidence for paradigmatic structure: <b>class shift</b>, <b>inheritance hierarchies</b> of related classes, <b>Priscianic formation</b>, and form–meaning mismatches.</li>
+   <li><b>Syncretism</b> can be natural (underspecification) or need <b>rules of referral</b>. <b>Defectiveness</b>, <b>deponency</b> and <b>periphrasis</b> are further mismatches.</li>`));
+  let tot=0,good=0;const rows=[];
+  SECTIONS.forEach(s=>{let n=0,g=0;s.steps.forEach(st=>{if(st.type==='quiz')st.qs.forEach(q=>{n++;if(app.score[q.id])g++;});});
+    if(n){tot+=n;good+=g;rows.push(`<li>${s.title}: <b>${g}/${n}</b></li>`);}});
+  box.append(el('p','res',`<b>Quiz results (first try): ${good} of ${tot}</b><ul class="pts">${rows.join('')}</ul>`));
+}
+
+const Q={
+ a1:mq('a1','Which pair is a paradigmatic relation?','bag and bags (singular contrasts with plural)',['bag and the plural suffix -s in a row','Subject and verb in a sentence','A stem and its prefix'],'Paradigmatic relations hold between items that could fill the same slot and contrast with each other.'),
+ a2:mq('a2','What does the word-based rule add compared with the morpheme-based one?','A direct relation between the singular and the plural forms',['The order of stem and suffix','A meaning for the root','Nothing: they are identical'],'The morpheme-based rule only combines bag + -s. The word-based rule also links the forms of one lexeme.'),
+ c1:mq('c1','All three Irish nouns have a zero nominative singular, but gen.pl is zero, -e or -ach. This shows…','Three inflection classes with suppletive allomorphs',['Phonological allomorphy','One irregular noun','A derivational suffix'],'Lexemes that choose different suppletive allomorphs belong to different inflection classes.'),
+ c2:mq('c2','Why is the Latin nominative singular of little use for predicting the class?','Hortus and gradus have the same ending -us',['It is always irregular','Latin has no nominative','It is the rarest form'],'The nom.sg and acc.sg endings are the same in both classes. The genitive singular tells them apart.'),
+ c3:mq('c3','Why must inflection class be distinguished from gender in Italian?','Mano takes -o but is feminine, and poeta takes -a but is masculine',['Italian has no gender','Gender is inflection','All -a nouns are feminine'],'Class determines the forms; gender is an agreement feature that shows on adjectives.'),
+ c4:mq('c4','A class that accepts loanwords and attracts class-shifting lexemes is…','Highly productive',['Unproductive','Of intermediate productivity','Defective'],'Intermediate classes form neologisms but do not take loanwords; unproductive classes do not even do that.'),
+ p1:mq('p1','Why did Latin nouns shift from u- to o-declension but not the reverse?','Speakers who forgot the genitive matched both rules and chose the larger o-declension',['The u-declension was borrowed','Phonological change only','The o-declension had more cases'],'Choosing the rule that generalises over more items explains the one-way shift.'),
+ p2:mq('p2','A paradigm of ten cells can be linked by how many pairwise rules?','45',['10','20','90'],'10 × 9 ÷ 2 = 45. A single paradigm rule with ten schemas replaces them all.'),
+ i1:mq('i1','What does a lower node in an inheritance hierarchy inherit?','Information shared with the higher rule-schema',['Its phonology only','Nothing: it is independent','The lexeme’s meaning'],'Shared information is stated once at the higher node.'),
+ i2:mq('i2','The Greek i2-class changed its nominative from -is to -i. What does this show?','Speakers relate classes paradigmatically: the general schema pulled the odd class into line',['A purely phonological change','A loan from Latin','The class became defective'],'The change was morphological, which would be mysterious if speakers knew only individual declensions.'),
+ i3:mq('i3','Which property do all Greek masculine classes share?','-s in the nominative singular',['-s in the genitive singular','-on in the nominative plural','No shared property'],'Feminines instead share -s in the genitive singular.'),
+ s1:mq('s1','How is the Latin future active participle formed on a Priscianic analysis?','From the past passive participle stem plus -ūr',['From the infinitive','From the present stem','It is suppletive'],'The meaning is unrelated to the base, but the form is regular.'),
+ s2:mq('s2','In Persian, which stems are always identical?','The past stem and the infinitive stem',['Past and present stems','Present and infinitive stems','All three'],'The present stem is sometimes suppletive (mund-/mun-, mord-/mir-).'),
+ y1:mq('y1','Why is German spielt (3sg) = spielt (2pl) judged accidental?','It cannot resolve a conflict: *Entweder Bierhoff oder ihr spielt',['It is rare','It never occurs in subordinate clauses','The vowel changes'],'Spielen (1pl/3pl), by contrast, can satisfy both: Entweder wir oder sie spielen.'),
+ y2:mq('y2','Lithuanian supa serves for 3sg and 3pl. The simplest description is…','Underspecification: the form is not marked for number',['A rule of referral','Two homonymous lexemes','Deponency'],'3sg and 3pl form a natural class, so a single form without a number feature will do.'),
+ y3:mq('y3','Why do Old Church Slavonic dual syncretisms need rules of referral?','Not natural classes, and underspecifying them would give all six dual cells identical features',['The forms are irregular','They are phonologically predictable','Dual is rare'],'Nom/acc, gen/loc, dat/inst share no exclusive property. Underspecification cannot separate them.'),
+ y4:mq('y4','Old High German fazzu was replaced by faz. What does this show?','A rule of referral (nom = acc, sg = pl) spread from the high-frequency wort class',['Regular sound change','A deponent verb','Priscianic formation'],'The change was morphological, so speakers must have had the rule.'),
+ m1:mq('m1','Defective lexemes differ from other irregular ones because…','Speakers learn that a form is missing, not just fail to fill it with the default',['They are very frequent','They have extra forms','They are always loanwords'],'The default pattern is not used to fill the gap, and many defective lexemes are rare.'),
+ x1:mq('x1','Ancient Greek class (ii) nouns like neaníās (‘young man’) shifted to genitive -ou, as in class (iii). A plausible motivation?','They denote men, so they were pulled towards the masculine pattern',['Phonological loss','Borrowing from Latin','They became defective'],'This is my analysis: class (ii) nouns are masculine by meaning but had the feminine endings of class (i).'),
+ x2:mq('x2','English are/were: is 2sg = plural syncretism systematic?','Yes: the form can satisfy 2sg and plural at once (Either you or they are…)',['No: it fails the syntactic test','It is a natural class of one form','It is deponent'],'My application of the syntactic test. Past were behaves the same way.')
+};
+
+const SECTIONS=[
+{title:'Syntagmatic and paradigmatic',steps:[
+ {type:'stage',cap:`<b>Syntagmatic</b> relations link units that follow each other. <b>Paradigmatic</b> relations link units that compete for the same slot.`,
+  spec:S(R([W('a','God','stem'),W('b','created','stem'),W('c','heaven','stem')],'syntagmatic →'),R([W('d','Allah','ghost'),W('e','made','ghost'),W('f','heavens','ghost')],'paradigmatic: alternatives for each slot'))},
+ {type:'stage',cap:`Morphology has both. A base is syntagmatically related to the affix on it. But <b>bag</b> counts as singular only because it contrasts with <b>bags</b>.`,
+  spec:S(R([W('a','bag','stem'),tl('b','-Ø','ghost',1.4),tl('c','-s','aff',1.4)],'bag ___ : the choices'),R([tl('d','*-en','bad',1.6)],'not available: children'))},
+ {type:'stage',cap:`The morpheme-based rule builds bags linearly from bag + -s. It does not link bag to bags. The word-based rule does.`,
+  spec:S(R([W('a','bag','stem'),tl('b','+','op',.8),tl('c','-s','aff',1.4),tl('d','→','op',.8),W('e','bags','mod')],'morpheme-based: syntagmatic only'),R([W('f','bag','copy'),tl('g','⇔','op',1),W('h','bags','copy')],'word-based: also paradigmatic'))},
+ {type:'stage',cap:`If a purely syntagmatic description is adequate, it is simpler. So the question is: is there anything that needs a direct relation between inflected forms? We start with inflection classes.`,
+  spec:S(R([tl('a','syntagmatic only','stem',5.6),tl('b','≟','op',1),tl('c','also paradigmatic','mod',6)],'which architecture?'))},
+ {type:'quiz',cap:'Quick check.',qs:[Q.a1,Q.a2]}
+]},
+{title:'Inflection classes',steps:[
+ {type:'stage',cap:`Irish nouns are all zero in the nominative singular, but the genitive plural differs: zero, -e or -ach. Lexemes with different suppletive endings are in different <b>inflection classes</b> (declensions for nouns, conjugations for verbs).`,
+  spec:S(R([W('a','focal','stem'),tl('b','-Ø','aff',1.4)],'‘word’ · gen.pl'),R([W('c','muc','stem'),tl('d','-e','aff',1.4)],'‘pig’ · gen.pl'),R([W('e','corón','stem'),tl('f','-ach','aff',1.8)],'‘crown’ · gen.pl'))},
+ {type:'widget',cap:`Endings come in <b>packages</b>. A Latin noun takes either the whole hortus package or the whole gradus package. Tap each cell.`,build:latinWidget},
+ {type:'widget',cap:`Because endings come in packages, one form predicts another.`,build:b=>labWidget(b,PREDICT,'Predict','Back')},
+ {type:'stage',cap:`Class assignment depends on phonological, semantic or morphological properties. Example: Arabic plural CaCaaCiC for CVCCVC singulars.`,
+  spec:S(R([tl('a','daftar','stem',3.4),tl('b','→','op',.8),tl('c','dafaatir','mod',3.8)],'CVCCVC → CaCaaCiC'),R([tl('d','dustuur','stem',3.4),tl('e','→','op',.8),tl('f','dasaatiir','mod',3.8)],'CVCCVVC → CaCaaCiiC'))},
+ {type:'widget',cap:`What decides the class in each case?`,
+  build:b=>sort3Widget(b,[
+   ['Eastern Armenian plural: -er on monosyllables, -ner on longer bases','ph','The size and shape of the base decides: phonological.'],
+   ['Welsh plural -od for animals (cathod ‘cats’)','se','Animacy: a semantic criterion.'],
+   ['Welsh -og nouns take -ion (swyddogion ‘officials’)','mo','The derivational suffix determines the plural: morphological assignment.'],
+   ['Tamil locative -it.am with human nouns, -il otherwise','se','Humanness: semantic.'],
+   ['Arabic kaatib → kuttaab (pattern C₁aaC₂iC₃ → C₁uC₂C₂aaC₃)','mo','The derivational pattern of the noun decides: morphological.'],
+   ['Lezgian participle: -j(i) after low vowels, -r after high','ph','The stem’s final vowel: phonological.']],
+   {ph:'Phonological',se:'Semantic',mo:'Morphological'})},
+ {type:'stage',cap:`Class is related to gender, but not the same. Italian <i>mano</i> ‘hand’ has -o but is feminine. <i>Poeta</i> has -a but is masculine. Gender shows in agreement.`,
+  spec:S(R([W('a','la','copy'),W('b','man-o','stem'),W('c','rugos-a','copy')],'la mano rugosa: feminine agreement'),R([W('d','il','copy'),W('e','poet-a','stem'),W('f','mort-o','copy')],'il poeta morto: masculine agreement'))},
+ {type:'stage',cap:`Classes also differ in <b>productivity</b>. A highly productive class takes loanwords and attracts shifting lexemes. An intermediate class forms neologisms only. An unproductive one does neither. Welsh plurals: -au, -oedd, -edd.`,
+  spec:S(R([tl('a','-au','ok',2),tl('b','loans ✓ shifters ✓ neologisms ✓','plain',9)],''),R([tl('c','-oedd','stem',2),tl('d','loans ✗ shifters ✗ neologisms ✓','plain',9)],''),R([tl('e','-edd','bad',2),tl('f','loans ✗ shifters ✗ neologisms ✗','plain',9)],''))},
+ {type:'quiz',cap:'Check yourself.',qs:[Q.c1,Q.c2,Q.c3,Q.c4]}
+]},
+{title:'Paradigm rules and class shift',steps:[
+ {type:'stage',cap:`In the word-based model, forms of one lexeme are related like derived lexemes. Hortī (nom.pl) corresponds to hortōrum (gen.pl). Ten cells give 45 pairwise rules…`,
+  spec:S(R([W('a','hort-ī','stem'),tl('b','⇔','op',1),W('c','hort-ōrum','stem')],'nom.pl ⇔ gen.pl'))},
+ {type:'stage',cap:`…or <b>one paradigm rule</b> with ten word-schemas. This captures that endings come in packages. It is a more explicit version of the tables in Latin school grammars.`,
+  spec:S(R([tl('a','{ /Xus/ /Xī/ /Xō/ /Xum/ … }','ok',12)],'one rule, ten schemas'))},
+ {type:'stage',cap:`Class shift: in later Latin, <i>senātus</i> (u-declension) moved to the o-declension. Suppose speakers forgot the genitive.`,
+  spec:S(R([W('a','senātus','stem'),tl('o','→','op',.8),W('b','gen?','var')],'nominative only'),R([tl('c','o-declension: -ī','ok',4.6),tl('d','u-declension: -ūs','ok',4.8)],'both rules match'))},
+ {type:'stage',cap:`In such a situation speakers prefer the rule that generalises over more items. The o-declension was always larger, so the shift went one way only.`,
+  spec:S(R([W('a','senātus','stem'),tl('o','→','op',.8),W('b','senātī','mod')],'new genitive'),R([tl('c','o-declension: many nouns','ok',7),tl('d','u: few','ghost',3.6)],'the bigger rule wins'))},
+ {type:'stage',cap:`The key observation: one form of a word is a clue to its class, so speakers predict one form from another. That is a <b>paradigmatic relation</b>. A purely syntagmatic model struggles to state it.`,
+  spec:S(R([W('a','form 1','stem'),tl('b','⇒','op',1),W('c','form 2','mod')],'prediction within a paradigm'))},
+ {type:'quiz',cap:'Check yourself.',qs:[Q.p1,Q.p2]}
+]},
+{title:'Inheritance hierarchies',steps:[
+ {type:'widget',cap:`Seven Modern Greek declensions, six cells each. Tap a cell and see which classes share the ending. Colours mark the same suffix.`,build:greekWidget},
+ {type:'stage',cap:`The a- and i1-declensions differ only in the vowel. A <b>rule-schema</b> with a vowel variable V covers both. They are subtypes of one declension, like violin and cello among stringed instruments.`,
+  spec:S(R([W('a','XV Xes','ok',{}),],''),R([W('b','Xa Xes','stem'),W('c','Xi Xes','stem')],'a-declension · i1-declension'))},
+ {type:'stage',cap:`In an <b>inheritance hierarchy</b> shared information is stated once at the higher node and inherited by the lower ones. The top node of the Greek hierarchy is almost all variables, but every class has genitive plural -on.`,
+  spec:S(R([tl('a','X V Z','ok',4)],'top: stem, vowel, anything else'),R([tl('b','masculine','stem',4.4),tl('c','feminine','mod',4.4)],'major split'),R([tl('d','os as us','plain',4),tl('e','a i1 i2 u','plain',4.4)],'microclasses'))},
+ {type:'stage',cap:`The split: every masculine class has <b>-s in the nominative singular</b>. Every feminine class has <b>-s in the genitive singular</b>.`,
+  spec:S(R([W('a','nomos','stem'),W('b','pateras','stem'),W('c','papus','stem')],'masculine: -s in nom.sg'),R([W('d','imeras','mod'),W('e','texnis','mod'),W('f','poleos','mod'),W('g','maimus','mod')],'feminine: -s in gen.sg '))},
+ {type:'stage',cap:`So how many classes are there? Seven microclasses, a middle level of about four, or two macroclasses. The hierarchy answers at several levels. Some similarities need <b>cross-classification</b>, such as us and u.`,
+  spec:S(R([tl('a','7 micro','stem',3.6),tl('b','≈4 middle','stem',4.2),tl('c','2 macro','stem',3.6)],'levels of abstraction'))},
+ {type:'stage',cap:`Hierarchies can also allow <b>defaults and overrides</b>: a higher node supplies /Xes/ for the plural unless a lower node overrides it. Greek os-class overrides with /Xi/ and /Xus/.`,
+  spec:S(R([tl('a','default plural: Xes','ok',6)],'higher node'),R([tl('b','os: Xi, Xus (!)','bad',6),tl('c','a: Xes','ok',3.6)],'override · inherited'))},
+ {type:'stage',cap:`Real evidence: the i2-class originally had nominative <b>-is</b> (polis). It changed to <b>-i</b> (poli), clashing less with the schema for other feminine classes. A morphological change like this shows that speakers relate classes.`,
+  spec:S(R([W('a','polis','ghost'),tl('b','→','op',.8),W('c','poli','ok')],'i2-declension nom.sg'))},
+ {type:'quiz',cap:'Check yourself.',qs:[Q.i1,Q.i2,Q.i3]}
+]},
+{title:'Stems and Priscianic formation',steps:[
+ {type:'stage',cap:`Persian verbs have two stems. Past and infinitive share one (mund-), and the present uses another (mun-). The present stem is sometimes suppletive.`,
+  spec:S(R([W('a','mund-','stem'),W('b','mund-æm','stem')],'infinitive · past: same stem'),R([W('c','mi-mun-æm','mod')],'present: other stem'))},
+ {type:'widget',cap:`Sometimes one stem is built on another stem of the same paradigm. This is <b>Priscianic formation</b>: a paradigm member is formed from another member, regardless of meaning. Try the examples.`,build:b=>labWidget(b,PRIS,'Apply the rule','Back')},
+ {type:'stage',cap:`For most purposes, a stem-set analysis (three stems per verb) is equivalent. But where a stem set adds nothing, as in Shoshoni, Priscianic formation is the simpler description.`,
+  spec:S(R([tl('a','stem set','stem',3.6),tl('b','≈','op',1),tl('c','Priscianic','mod',4)],'two ways to describe it'))},
+ {type:'quiz',cap:'Check yourself.',qs:[Q.s1,Q.s2]}
+]},
+{title:'Syncretism',steps:[
+ {type:'stage',cap:`<b>Syncretism</b>: systematic identity of two paradigm cells, one form for two sets of values. German: 1pl = 3pl (spielen), and also 3sg = 2pl (spielt). Are both systematic?`,
+  spec:S(R([W('a','spielen','stem'),W('b','spielen','stem')],'1pl · 3pl'),R([W('c','spielt','stem'),W('d','spielt','stem')],'3sg · 2pl'))},
+ {type:'stage',cap:`Test 1, across classes: even in vowel-changing verbs 3sg gibt ≠ 2pl gebt, but 1pl/3pl is identical in every German verb, including sein.`,
+  spec:S(R([W('a','gibt','stem'),tl('b','≠','op',1),W('c','gebt','stem')],'3sg ≠ 2pl: breaks down'),R([W('d','sind','ok'),tl('e','=','op',1),W('f','sind','ok')],'1pl = 3pl everywhere'))},
+ {type:'stage',cap:`Test 2, syntax: a syncretic form can satisfy two conflicting requirements. <i>Entweder wir oder sie spielen</i> works. <i>Entweder Bierhoff oder ihr spielt</i> does not.`,
+  spec:S(R([W('a','wir/sie spielen','ok'),],'✓ systematic'),R([W('b','Bierhoff/ihr spielt','bad')],'✗ accidental'))},
+ {type:'stage',cap:`Test 3, change: English stood/stood and sat/sat show the past participle becoming identical to the past tense by analogy, a morphological change. Test 4: forms that make a natural class are probably syncretic.`,
+  spec:S(R([W('a','standan','ghost'),tl('b','stōd','plain',2.4),W('c','gestanden','ghost')],'Old English'),R([W('d','stand','stem'),W('e','stood','mod'),W('f','stood','mod')],'now: participle = past'))},
+ {type:'widget',cap:`Systematic or accidental?`,
+  build:b=>sort3Widget(b,[['German spielen (1pl = 3pl)','sys','It resolves feature conflicts and holds in all verbs.'],['German spielt (3sg = 2pl)','acc','It fails the syntactic test and the class test.'],['Lithuanian supa (3sg = 3pl)','sys','3sg and 3pl are the only third-person cells: a natural class.'],['English stood (past = participle)','sys','It arose by morphological, analogical change in stand and sit.']],{sys:'Systematic',acc:'Accidental'})},
+ {type:'stage',cap:`Natural syncretism is easy: leave the feature out. Lithuanian <i>supa</i> is simply third person, with no number, so it fits a singular or plural subject. This is <b>underspecification</b>.`,
+  spec:S(R([W('a','supu','stem'),W('b','supame','stem')],'1sg · 1pl'),R([W('c','supi','stem'),W('d','supate','stem')],'2sg · 2pl'),R([tl('e','supa','ok',9)],'3: no number specified'))},
+ {type:'stage',cap:`Underspecification works even for non-natural cases. Arabic gen.pl and acc.pl are identical. Mark them only plural, and nominative plural -un is more specific. The <b>elsewhere condition</b> picks the most specific form.`,
+  spec:S(R([tl('a','nom.pl: -un','ok',4.4),tl('b','pl: -in','stem',3.6)],'specific beats general'))},
+ {type:'stage',cap:`Old Church Slavonic dual: nom=acc, gen=loc, dat=inst. These are not natural classes and underspecification cannot separate them. A <b>rule of referral</b> states that two cells are identical.`,
+  spec:S(R([tl('a','nom.du','stem',2.8),tl('b','⇒','op',1),tl('c','acc.du','stem',2.8)],'-a  /  -a (ŭ-class)'),R([tl('d','gen.du','mod',2.8),tl('e','⇒','op',1),tl('f','loc.du','mod',2.8)],'-u  /  -u'),R([tl('g','dat.du','var',2.8),tl('h','⇒','op',1),tl('i','inst.du','var',2.8)],'-oma  /  -oma'))},
+ {type:'stage',cap:`Rules of referral are real: in pre-Old High German, plural fazzu became faz, copying the singular like the more frequent <i>wort</i> class, which had lost -u by sound change.`,
+  spec:S(R([W('a','fazzu','ghost'),tl('b','→','op',.8),W('c','faz','ok')],'nom/acc plural'),R([tl('d','rule: nom.sg = nom.pl','var',8)],'spread from the wort class'))},
+ {type:'quiz',cap:'Check yourself.',qs:[Q.y1,Q.y2,Q.y3,Q.y4]}
+]},
+{title:'More mismatches',steps:[
+ {type:'stage',cap:`<b>Defectiveness</b>: a lexeme lacks some forms. Russian <i>pobedit’</i> ‘win’ has no 1sg *pobežu. Italian <i>incombere</i> has no past participle. The regular pattern is not used to fill the gap.`,
+  spec:S(R([W('a','pobedit’','stem'),tl('b','→','op',.8),W('c','*pobežu','bad')],'a missing form'),R([tl('d','oderžu pobedu','ok',7)],'a way around it'))},
+ {type:'stage',cap:`Defectiveness can follow paradigm dependencies: Spanish abolir lacks forms (*abolo, *abuelo) that cannot be predicted from other forms and are too rare to memorise.`,
+  spec:S(R([W('a','abolir','stem'),tl('b','→','op',.8),W('c','*abolo','bad'),W('d','*abuelo','bad')],'unpredictable, so absent'))},
+ {type:'stage',cap:`<b>Deponency</b>: a form is used in the “wrong” function. Greek érxome ‘come’ has passive endings but active meaning.`,
+  spec:S(R([W('a','pléno','stem'),W('b','plénome','mod')],'‘wash’: active · passive'),R([W('c','érxome','bad')],'‘I come’: active meaning, passive form'))},
+ {type:'stage',cap:`<b>Periphrasis</b>: a missing cell is filled by a conventional phrase. English <i>more beautiful</i> for *beautifuller. Latin perfect passive <i>scriptum est</i>, where the active perfect has a single word.`,
+  spec:S(R([W('a','*beautifuller','bad'),tl('b','→','op',.8),W('c','more beautiful','ok')],'lexical periphrasis'),R([W('d','scripsit','stem'),W('e','scriptum est','mod')],'Latin perfect: active · passive'))},
+ {type:'widget',cap:`Which mismatch is it?`,
+  build:b=>sort3Widget(b,[['Russian *pobežu ‘I will win’','def','The 1sg form simply does not exist.'],['Greek érxome ‘I come’ with passive endings','dep','A form of one value used for another.'],['English more interesting','per','A conventional phrase filling a lexical gap.'],['Latin scriptum est (perfect passive)','per','Paradigmatic periphrasis: the active perfect has a single word, the passive does not.'],['French je vais faire ‘I will do’','non','Categorial periphrasis: the future is never one word, so it is not a morphological matter.']],
+    {def:'Defectiveness',dep:'Deponency',per:'Periphrasis (morphological)',non:'Not morphological'})},
+ {type:'quiz',cap:'Check yourself.',qs:[Q.m1]}
+]},
+{title:'Exercises',steps:[
+ {type:'widget',cap:`Exercise 1: Tagalog perfectives. Apply the four rules from (8.11) to the verbs.`,build:b=>labWidget(b,TAG,'Form the perfective','Back')},
+ {type:'quiz',cap:`Exercises 4 and 6. These are open-ended in the book, so the answers are my analyses.`,qs:[Q.x1,Q.x2]},
+ {type:'stage',cap:`Exercise 2 asks which schema can be dropped if defaults and overrides are allowed. The idea: a lower class may override a default from its parent, so a schema that existed only to avoid a clash becomes unnecessary. Working out the exact schema from the book’s figure is left to you.`,
+  spec:S(R([tl('a','default Xes','ok',4.6)],'parent supplies a default'),R([tl('b','os: (!)Xi','bad',4.4),tl('c','a: inherits Xes','ok',6)],'child overrides, sibling inherits'))},
+ {type:'widget',cap:`That is chapter 8. Here is what to take away.`,build:summaryWidget}
+]}
+];
+Lesson.start({label:'Chapter 8 · Inflectional paradigms',sections:SECTIONS});
+</script>
+</body>
+</html>
