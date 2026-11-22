@@ -1,1 +1,279 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>Chapter 12 · Frequency effects in morphology · Understanding Morphology</title>
+<link rel="stylesheet" href="../assets/lesson.css">
+</head>
+<body>
+<script src="../assets/lesson.js"></script>
+<script>
+const {el,seg,T,tl,R,S,chg,mark,strip,shuffle,Stage,app,quizWidget,labWidget,sort3Widget}=Lesson;
+const mq=(id,q,right,wrongs,w)=>({id,q,o:[right,...wrongs],a:0,w});
+const wd=s=>s.length*.58+1;
+const sm=t=>`<span style="font-size:18px;line-height:1.35;display:inline-block">${t}</span>`;
 
+/* ---------- Table 12.1 ---------- */
+const FEAT=[
+ ['number',['singular','plural','dual']],['case',['nominative','accusative','dative']],['person',['3rd','1st/2nd']],
+ ['degree',['positive','comparative','superlative']],['voice',['active','passive']],['mood',['indicative','subjunctive']],
+ ['polarity',['affirmative','negative']],['tense',['present','future']]
+];
+function featWidget(box){
+  const chips=el('div','chips'),host=el('div','stage'),res=el('div','res');box.append(chips,host,res);const st=new Stage(host);
+  const KS=['stem','aff','mod'];
+  FEAT.forEach(([f,vals])=>{const c=el('button','chip',f);
+    c.onclick=()=>{[...chips.children].forEach(x=>x.classList.remove('on'));c.classList.add('on','done');
+      const tiles=[];vals.forEach((v,i)=>{if(i)tiles.push(tl('g'+i,'>','op',.7));tiles.push(tl('v'+i,v,KS[i],Math.max(2.6,wd(v)*.9)));});
+      st.set(S(R(tiles,'from most to least frequent')));
+      res.innerHTML=`<b>${f}</b>: ${vals.join(' > ')}. This is the overall pattern of a language, not a claim about every word.`;};
+    chips.append(c);});
+  chips.children[0].click();
+}
+const NUM=[['French',[74.3,25.7,0],'1,000 nouns'],['Latin',[85.2,14.8,0],'8,342 nouns'],['Russian',[77.7,22.3,0],'8,194 nouns'],
+ ['Sanskrit',[70.3,25.1,4.6],'93,277 nouns'],['Slovene',[72.5,26.9,.6],'11,711 nouns'],['Upper Sorbian',[64,30,6],'size unknown']];
+function numWidget(box){
+  const chips=el('div','chips'),list=el('div'),res=el('div','res');box.append(chips,list,res);
+  NUM.forEach(([l,v,n])=>{const c=el('button','chip',l);
+    c.onclick=()=>{[...chips.children].forEach(x=>x.classList.remove('on'));c.classList.add('on','done');list.innerHTML='';
+      ['singular','plural','dual'].forEach((nm,i)=>{if(i===2&&!v[2])return;const r=el('div','ebar');r.style.gridTemplateColumns='70px 1fr 48px';
+        r.innerHTML=`<span class="bl">${nm}</span><div class="bt"><i class="${i?'wf':'mo'}" style="width:${Math.max(1.5,v[i])}%"></i></div><b>${v[i]}%</b>`;list.append(r);});
+      res.innerHTML=`${l}: ${n}. The singular wins in every language, whatever the text.${v[2]?' The dual is rarest.':''} <small>Corbett’s figures; text genre and meaning details differ.</small>`;};
+    chips.append(c);});
+  chips.children[0].click();
+}
+
+/* ---------- Shortness: endings as tile widths ---------- */
+const ending=(name,lang,desc,stem,e,kind,sub)=>({name,lang,desc,
+  a:S(R([tl('s',stem,'stem',wd(stem))],sub||'stem')),
+  b:S(R([tl('s',stem,'stem',wd(stem)),e?tl('e','-'+e,kind||'aff',wd(e)+.4,{enter:'right'}):tl('e','∅','ghost',1,{enter:'right'})],e?'with the ending: '+(e.length)+' letters':'zero expression'))});
+const UDM=[
+ ending('nom. sg','Udmurt · most frequent','<span class="w">val</span> ‘horse’. The nominative singular is zero: the shortest form for the most frequent values.','val','',0,'horse'),
+ ending('acc. sg','Udmurt · frequent','<span class="w">val-ez</span>. A short ending for the accusative.','val','ez'),
+ ending('abl. sg','Udmurt · rarer','<span class="w">val-leś</span>. The rarer ablative is longer than the accusative.','val','leś'),
+ ending('abess. sg','Udmurt · rarer','<span class="w">val-tek</span> ‘without the horse’. Another rare case, another longer ending.','val','tek'),
+ ending('nom. pl','Udmurt · plural','<span class="w">val-jos</span>. The plural is overt, so it is longer than the zero singular.','val','jos'),
+ ending('acc. pl','Udmurt · plural','<span class="w">val-josty</span>. Plural plus accusative: the longest so far.','val','josty'),
+ ending('abl. pl','Udmurt · plural','<span class="w">val-josleś</span>. Plural plus a rare case.','val','josleś')
+];
+const pg=(name,lang,desc,pre,stem,suf,kindP)=>({name,lang,desc,
+  a:S(R([tl('s',stem,'stem',wd(stem))],'stem')),
+  b:S(R([...(pre?[tl('p',pre,kindP||'aff',wd(pre)+.4)]:[tl('p','∅','ghost',1)]),tl('s',stem,'stem',wd(stem)),...(suf?[tl('x',suf,'aff',wd(suf)+.4)]:[])],'with markers'))});
+const ZERO=[
+ pg('Tzutujil 3sg','Zero in the third person singular','<span class="w">x-wari</span> ‘he slept’ (completive 3sg) has no person prefix, while 1sg is <span class="w">x-in-wari</span>.','x- ∅','wari','',null),
+ pg('Tzutujil potential','Rarer mood, longer marker','<span class="w">xti-wari</span>: the potential marker xti- is longer than the completive x-.','xti-','wari','',null),
+ pg('Kobon present','Frequent value · short marker','<span class="w">ar-ab</span> ‘eats’ (present, 3sg): the 3sg is zero and the present marker is just -ab.','ar-','∅','ab','aff'),
+ pg('Kobon future','Rarer value · longer marker','<span class="w">ar-nab</span> (future 3sg): the future marker has an extra n, so it is longer.','ar-','∅','nab','aff'),
+ pg('Kobon conditional','Rare · longest','<span class="w">ar-böp</span> (conditional 3sg): two consonants, b and p.','ar-','∅','böp','aff')
+];
+
+/* ---------- Syncretism ---------- */
+const PAR=[
+ {name:'OE pres. ind.',note:'Old English <i>bindan</i> ‘bind’, present indicative.',cells:[['1sg','binde'],['2sg','bintst'],['3sg','bint'],['pl','bindaþ']]},
+ {name:'OE pres. sbjv.',note:'The present subjunctive is more syncretic: the three singulars are identical.',cells:[['1sg','binde'],['2sg','binde'],['3sg','binde'],['pl','binden']]},
+ {name:'OE past ind.',note:'The past indicative has some syncretism, but less than the subjunctive.',cells:[['1sg','band'],['2sg','bunde'],['3sg','band'],['pl','bundon']]},
+ {name:'OE past sbjv.',note:'The rare past subjunctive has the most syncretism.',cells:[['1sg','bunde'],['2sg','bunde'],['3sg','bunde'],['pl','bunden']]},
+ {name:'Gothic active',note:'Gothic <i>niman</i> ‘take’, active: five shapes.',cells:[['1sg','nima'],['2sg','nimis'],['3sg','nimiþ'],['1pl','nimam'],['2pl','nimiþ'],['3pl','nimand']]},
+ {name:'Gothic passive',note:'The rarer passive has only three shapes.',cells:[['1sg','nimada'],['2sg','nimaza'],['3sg','nimada'],['1pl','nimanda'],['2pl','nimanda'],['3pl','nimanda']]}
+];
+function parWidget(box){
+  const chips=el('div','chips'),host=el('div','stage'),res=el('div','res');box.append(chips,host,res);const st=new Stage(host);
+  PAR.forEach(p=>{const c=el('button','chip',p.name);
+    c.onclick=()=>{[...chips.children].forEach(x=>x.classList.remove('on'));c.classList.add('on','done');
+      const seen={};p.cells.forEach(x=>{seen[x[1]]=(seen[x[1]]||0)+1;});const distinct=Object.keys(seen).length;
+      st.set(S(R(p.cells.map((x,i)=>tl('c'+i,x[1],seen[x[1]]>1?'var':'stem',2.4,{sub:x[0]})),'violet = a shape shared by several cells')));
+      res.innerHTML=`${p.note}<br><b>${distinct} different shapes in ${p.cells.length} cells.</b>`;};
+    chips.append(c);});
+  chips.children[0].click();
+}
+
+/* ---------- Local reversals ---------- */
+const REV=[
+ ['table','sg','Most nouns are commoner in the singular: the default.'],
+ ['eyes','pl','Paired body parts (eyes, lips, hair) tend to occur in the plural.'],
+ ['doctor','sg','Ordinary count nouns are commoner in the singular.'],
+ ['beans','pl','Small parts of plants (beans, strawberries, leaves) tend to occur in the plural.'],
+ ['ants','pl','Small animals (ants, fish, mice) tend to occur in the plural.'],
+ ['head','sg','One head per person: the singular is more frequent.'],
+ ['splinters','pl','Splinters and sand grains come in groups, so the plural is commoner.'],
+ ['leaves','pl','Leaves come in groups: the plural is more frequent.']
+];
+function revSort(box){sort3Widget(box,REV,{sg:'Singular is commoner',pl:'Plural is commoner'});}
+const WELSH=[
+ {name:'dail → deilen',lang:'Welsh · singular marked',desc:`<span class="w">dail → deilen</span> ‘leaves → leaf’. Leaves are more often plural, so the plural is the short unmarked form and the singular gets a special suffix.`,
+  a:S(R([tl('p','dail','stem',2.4)],'leaves (plural, frequent)')),b:S(R([tl('p','deil','mod',2.4,{from:'p'}),tl('s','en','aff',1.4,{enter:'right'})],'leaf (singular): marked with -en'))},
+ {name:'pysgod → pysgodyn',lang:'Welsh · singular marked',desc:`<span class="w">pysgod → pysgodyn</span> ‘fish (pl) → fish (sg)’.`,
+  a:S(R([tl('p','pysgod','stem',3.6)],'fish (plural)')),b:S(R([tl('p','pysgod','stem',3.6),tl('s','yn','aff',1.4,{enter:'right'})],'one fish: marked with -yn'))},
+ {name:'mefus → mefusen',lang:'Welsh · singular marked',desc:`<span class="w">mefus → mefusen</span> ‘strawberries → strawberry’.`,
+  a:S(R([tl('p','mefus','stem',3.2)],'strawberries (plural)')),b:S(R([tl('p','mefus','stem',3.2),tl('s','en','aff',1.4,{enter:'right'})],'one strawberry: marked with -en'))},
+ {name:'cath → cathod',lang:'Welsh · the usual direction',desc:`<span class="w">cath → cathod</span> ‘cat → cats’. For most nouns the plural is the marked form, as in other Indo-European languages.`,
+  a:S(R([tl('s','cath','stem',2.4)],'cat (singular, frequent)')),b:S(R([tl('s','cath','stem',2.4),tl('p','od','aff',1.4,{enter:'right'})],'cats: marked with -od'))},
+ {name:'handelaar',lang:'Dutch · derivation',desc:`<span class="w">handelaar → handelaarster</span> ‘merchant → female merchant’. Occupation nouns are more often used for men, so the female noun is the derived one. Male-marking affixes are extremely rare.`,
+  a:S(R([tl('m','handelaar','stem',4.4)],'merchant (male or general)')),b:S(R([tl('m','handelaar','stem',4.4),tl('f','ster','aff',2,{enter:'right'})],'female merchant'))},
+ {name:'widow',lang:'English · reversed',desc:`<span class="w">widow → widower</span>. Marital status has traditionally mattered more for women, so the male form is marked. Likewise <i>nurse → male nurse</i>.`,
+  a:S(R([tl('w','widow','stem',3)],'widow (female)')),b:S(R([tl('w','widow','stem',3),tl('e','er','aff',1.6,{enter:'right'})],'widower: marked, because the frequency is reversed'))}
+];
+
+/* ---------- Levelling ---------- */
+const lev=(name,lang,desc,s1,p1,s2,p2,chS,chP)=>({name,lang,desc,
+  a:S(R([tl('s',s1,'stem',wd(s1)+.4),tl('p',p1,'mod',wd(p1)+.4)],'before levelling')),
+  b:S(R([tl('s',s2,chS?'ok':'stem',wd(s2)+.4),tl('p',p2,chP?'ok':'mod',wd(p2)+.4)],'after levelling: '+(chS?'the plural stem was extended to the singular':'the singular stem was extended to the plural')))});
+const LEV=[
+ lev('house','English · singular extended','<span class="w">[haʊs] / [haʊzəz] → [haʊs] / [haʊsəz]</span>. Some speakers level the voicing: the singular stem is extended. Nobody says [haʊz] for the singular.','haʊs','haʊzəz','haʊs','haʊsəz',0,1),
+ lev('hoer','West Frisian · singular extended','<span class="w">hoer / hworren → hoer / hoeren</span> ‘whore(s)’. For a noun used mostly in the singular, the singular stem wins.','hoer','hworren','hoer','hoeren',0,1),
+ lev('poel','West Frisian · singular extended','<span class="w">poel / pwollen → poel / poelen</span> ‘pool(s)’.','poel','pwollen','poel','poelen',0,1),
+ lev('earm','West Frisian · plural extended','<span class="w">earm / jermen → jerm / jermen</span> ‘arm(s)’. The local frequency is reversed: arms come in pairs, so the plural stem is extended to the singular.','earm','jermen','jerm','jermen',1,0),
+ lev('kies','West Frisian · plural extended','<span class="w">kies / kjizzen → kjizze / kjizzen</span> ‘tooth / teeth’. Teeth are plural-heavy, so the plural stem wins.','kies','kjizzen','kjizze','kjizzen',1,0),
+ lev('oleum','Latin · case levelling','<span class="w">olīvī → oleī</span>. After sound changes, nominative/accusative oleum had the stem ole-, but the genitive kept olīv-. The frequent nom./acc. stem was extended, giving genitive oleī.','oleum','olīvī','oleum','oleī',0,1)
+];
+
+/* ---------- Irregularity ---------- */
+const IRR=[
+ {name:'have',lang:'English · reduced',desc:`<span class="w">haved → had</span>. A frequent verb is predictable, so it is pronounced less clearly. Compare <i>behaved</i>, which stayed regular.`,
+  a:S(R([tl('h','haved','ghost',2.8)],'earlier English: regular')),b:S(R([tl('h','had','mod',2.2,{from:'h'})],'now: reduced, irregular'))},
+ {name:'say',lang:'English · reduced',desc:`<span class="w">sayed → said</span>. Compare <i>played</i>, which stayed regular.`,
+  a:S(R([tl('h','sayed','ghost',2.8)],'earlier English: regular')),b:S(R([tl('h','said','mod',2.2,{from:'h'})],'now: reduced, irregular'))},
+ {name:'make',lang:'English · reduced',desc:`<span class="w">maked → made</span>. Compare <i>faked</i>, which stayed regular.`,
+  a:S(R([tl('h','maked','ghost',2.8)],'earlier English: regular')),b:S(R([tl('h','made','mod',2.2,{from:'h'})],'now: reduced, irregular'))},
+ {name:'uomo',lang:'Italian · conserved',desc:`<span class="w">uomo / uomini</span> keeps the Latin homo/homines declension, while vergine/vergini was regularized (Latin virgo/virgines). A frequent word has strong memory strength and resists levelling.`,
+  a:S(R([tl('u','uomo','lex',2.6),tl('v','uomini','lex',3.2)],'irregular: conserved')),b:S(R([tl('u','vergine','stem',3.2),tl('v','vergini','stem',3.4)],'regular: the rarer word levelled'))},
+ {name:'oči',lang:'Bulgarian · conserved dual',desc:`<span class="w">oko / oči</span> ‘eye(s)’ and <span class="w">uxo / uši</span> ‘ear(s)’. These plurals were originally dual forms, probably the most frequent forms in the paradigm, because eyes and ears come in pairs.`,
+  a:S(R([tl('o','oko','lex',2.2),tl('p','oči','lex',2.2)],'eye / eyes')),b:S(R([tl('o','uxo','lex',2.2),tl('p','uši','lex',2.2)],'ear / ears'))}
+];
+
+/* ---------- Exercise 1: paradigms ---------- */
+const EXP=[
+ {name:'a. Udmurt',sg:[['1sg','ućki'],['2sg','ućkid'],['3sg','ućkiz']],pl:[['1pl','ućkimy'],['2pl','ućkidy'],['3pl','ućkizy']],
+  note:`Surprising: the 3sg <b>ućkiz</b> is overt (-z), not zero, and it is no shorter than the other persons. Fulfilled: the plural is one segment longer than the singular (-y).`},
+ {name:'b. Even',sg:[['nom','ǰuu'],['acc','ǰuuw'],['dat','ǰuudu'],['com','ǰuuñun'],['abl','ǰuuduk']],pl:[['nom','ǰuul'],['acc','ǰuulbu'],['dat','ǰuuldu'],['com','ǰuulñun'],['abl','ǰuulduk']],
+  note:`Fulfilled: the nominative singular is zero and the accusative is short. The plural adds -l everywhere, so plural forms are longer than singular ones. Fairly typical.`},
+ {name:'c. Pipil',sg:[['1sg','nu-chi:l'],['2sg','mu-chi:l'],['3sg','i-chi:l']],pl:[['1pl','tu-chi:l'],['2pl','amu-chi:l'],['3pl','in-chi:l']],
+  note:`Surprising: even the 3sg is overt (i-). Mixed: 2pl and 3pl are longer than 2sg and 3sg, but 1pl is no longer than 1sg.`},
+ {name:'d. Tauya',sg:[['1sg','ya-potiyafo'],['2sg','na-potiyafo'],['3sg','potiyafo']],pl:[['1pl','sono-potiyafo'],['2pl','tono-potiyafo'],['3pl','nono-potiyafo']],
+  note:`Fulfilled: the 3sg is zero (the most frequent person), and the plural prefixes are longer than the singular ones.`}
+];
+function expWidget(box){
+  const chips=el('div','chips'),host=el('div','stage'),res=el('div','res');box.append(chips,host,res,el('p','hint','These readings are mine: the book gives no key.'));const st=new Stage(host);
+  EXP.forEach(p=>{const c=el('button','chip',p.name);
+    c.onclick=()=>{[...chips.children].forEach(x=>x.classList.remove('on'));c.classList.add('on','done');
+      const mk=(row,pre)=>row.map((x,i)=>tl(pre+i,x[1],pre==='s'?'stem':'aff',Math.max(2.4,x[1].length*.38),{sub:x[0]}));
+      st.set(S(R(mk(p.sg,'s'),'singular'),R(mk(p.pl,'p'),'plural')));
+      res.innerHTML=p.note;};chips.append(c);});
+  chips.children[0].click();
+}
+
+/* ---------- Summary ---------- */
+function summaryWidget(box){
+  box.append(el('ul','pts',`
+   <li><b>Frequent and rare values:</b> singular > plural > dual, nominative > accusative > dative, third person > first/second, active > passive, and so on. The ultimate reason lies outside language, in what people find relevant.</li>
+   <li><b>Frequency and shortness:</b> predictable values can be short, even zero (Udmurt nominative singular, third person singular).</li>
+   <li><b>Frequency and differentiation:</b> frequent values show less syncretism, fewer shared exponents across inflection classes, and more cross-cutting values. Rare values are harder to remember in detail.</li>
+   <li><b>Local reversals:</b> where a noun is used mostly in the plural, the singular is marked (Welsh deilen). Female nouns are derived from male ones, except where the frequency is reversed (widower, male nurse).</li>
+   <li><b>Analogical levelling</b> extends the more frequent stem (house, hoer / earm). <b>Irregularity</b> clusters in frequent lexemes, because of phonological reduction and because strong memory conserves forms.</li>`));
+  let tot=0,good=0;const rows=[];
+  SECTIONS.forEach(s=>{let n=0,g=0;s.steps.forEach(st=>{if(st.type==='quiz')st.qs.forEach(q=>{n++;if(app.score[q.id])g++;});});
+    if(n){tot+=n;good+=g;rows.push(`<li>${s.title}: <b>${g}/${n}</b></li>`);}});
+  box.append(el('p','res',`<b>Quiz results (first try): ${good} of ${tot}</b><ul class="pts">${rows.join('')}</ul>`));
+}
+
+/* ---------- Quizzes ---------- */
+const Q={
+ a1:mq('a1','Why can the nominative be expected to be more frequent than the accusative?','Every verb has a subject, but only transitive verbs have an accusative',['Nominatives are shorter','Accusatives are borrowed','Dative blocks the accusative'],'This holds especially in languages that do not allow unexpressed arguments.'),
+ a2:mq('a2','Why must the subjunctive be rarer than the indicative?','It is used mainly in subordinate clauses, which presuppose a main clause with an indicative',['It is harder to pronounce','It has no past tense','It is only used in poetry'],'Part of the explanation is structural, but the ultimate reason is human relevance.'),
+ a3:mq('a3','In the six languages, which number value is commonest?','The singular, in every text counted',['The plural','The dual','It varies with each language'],'The asymmetry is so robust that it appears whichever text we use.'),
+ a4:mq('a4','What is the ultimate reason for the frequency of values, according to the book?','It lies outside language: humans find some things more relevant to talk about',['The structure of the verb','The shape of the suffix','Written style'],'We talk more about singular entities, third persons and present events.'),
+ s1:mq('s1','What is the general correlation between frequency and form?','Frequent expressions tend to be short, even zero',['Frequent expressions are long','There is no correlation','Rare expressions are zero'],'Zero expression is just the extreme case of the correlation between frequency and shortness.'),
+ s2:mq('s2','In the Udmurt paradigm, which form is the shortest?','The nominative singular, which is zero',['The accusative plural','The ablative singular','The abessive plural'],'Nominative and singular are the most frequent values.'),
+ s3:mq('s3','Why are the rarer ablative and abessive longer than the accusative in Udmurt?','Rarer values get longer markers: predictable ones can be short',['They are older','They are borrowed','They come from the verb'],'Speakers use economical structures when meaning is predictable.'),
+ s4:mq('s4','Kobon future ar-nab versus present ar-ab shows that…','The rarer tense has the longer marker',['The present has the longer marker','Both have the same length','The future is zero'],'The conditional is longer still (ar-böp).'),
+ d1:mq('d1','Which Old English paradigm cells show the most syncretism?','The rare ones: the plural, the subjunctive, and the past subjunctive',['The present indicative singular','The infinitive','The active voice'],'Frequent values keep more distinctions.'),
+ d2:mq('d2','Gothic niman: the active has five shapes and the passive…','Three: less differentiation in the rarer voice',['Five','Six','One'],'The passive is the rarer voice.'),
+ d3:mq('d3','Arabic transitive verbs have four classes in the active but a uniform passive. This illustrates…','Inflection classes differ mostly in the frequent values',['Syncretism in the active','A cross-cutting value','A local reversal'],'Frequent values keep distinct exponents. In the rare passive, the class differences disappear.'),
+ d4:mq('d4','Why does the Latin future have no subjunctive?','Cross-cutting values are more complete in frequent values, and the future subjunctive is rare',['Latin had no future','The future is zero','The subjunctive is a tense'],'Compare laudat / laudet (present), laudabat / laudaret (past), laudabit / — (future).'),
+ d5:mq('d5','What explains the link between frequency and differentiation?','Frequent values have greater memory strength, so their details are easier to remember',['They are older forms','They are shorter','They are borrowed'],'Rare values are harder to retain in detail, so syncretism and fewer classes are common there.'),
+ r1:mq('r1','Which nouns are commoner in the plural?','Paired body parts, small animals, and small parts of plants',['Abstract nouns','Proper names','Tools'],'A group-prone referent favors the plural form.'),
+ r2:mq('r2','In Welsh dail ‘leaves’ / deilen ‘leaf’, which form is marked?','The singular, because leaves are usually plural',['The plural','Both','Neither'],'The marking follows the frequency reversal.'),
+ r3:mq('r3','Why is widower marked, when most female nouns are derived from male ones?','Marital status has traditionally been more relevant for women, so the male form is rarer',['Husbands die more often','The word is a loanword','-er is a female marker'],'The frequency relation is reversed, just as with male nurse.'),
+ r4:mq('r4','In Godoberi, overt marking appears on…','The subject case of inanimate nouns, while the object case is zero',['Animate objects','The nominative of animates','Dual forms only'],'Inanimates are more often objects than subjects, so the less frequent subject case is marked.'),
+ l1:mq('l1','Analogical levelling usually extends…','The stem of the more frequent value',['The stem of the rarer value','A random stem','The longest stem'],'House: the singular stem [haʊs] spreads, not [haʊz].'),
+ l2:mq('l2','Why does the plural stem win in West Frisian earm/jermen and kies/kjizzen?','Arms and teeth occur mostly in groups, so the plural is the more frequent form',['The plural is shorter','Both are loans','The singular was lost'],'The choice is not arbitrary: frequency reversals decide.'),
+ l3:mq('l3','Why does the stem ole- replace olīv- in the Latin genitive?','Ole- is the stem of the more frequent forms, with higher memory strength and faster retrieval',['It is older','It is longer','It comes from Greek'],'The frequent nominative/accusative stem is retrieved quickly and gets extended.'),
+ i1:mq('i1','Which verbs tend to be irregular across languages?','Frequent ones: be, do, go, come, say',['Rare ones','Verbs of motion only','Verbs with prefixes'],'Koromfe, Welsh and Old English all have irregulars among the most frequent verbs.'),
+ i2:mq('i2','What are the two ways frequency causes irregularity?','Phonological reduction and conservation through memory strength',['Borrowing and blocking','Analogy and blending','Syncretism and reduplication'],'Frequent expressions are predictable, so reduced, and also resist levelling.'),
+ i3:mq('i3','Why do English have, say and make differ from behave, play and fake?','They are more frequent, so more reduced: had, said, made',['They are older','They are borrowed','They are phrasal'],'The earlier haved, sayed, maked were regular.'),
+ i4:mq('i4','Italian uomo/uomini survives, while vergine/vergini was regularized, because…','Uomo is frequent, so strong memory conserved the old declension',['Uomo is shorter','Latin forced it','Vergine is a loan'],'Frequency has a conserving, decelerating effect on morphology (but speeds up phonological change).'),
+ x2:mq('x2','Exercise 2: older French trouv-/treuv- levelled to trouv- throughout. Why is this surprising?','The rarer 1pl/2pl stem was extended, while chapter 12 predicts the stem of frequent forms to win',['Because French has no stress','Because treuv- is longer','Because verbs never level'],'This is my analysis: the stem-stressed forms (je, tu, il, ils) are the more frequent, yet their stem was replaced.'),
+ x3:mq('x3','Exercise 3: where did chapter 10 refer to frequency?','The s/r alternation survives only in high-frequency be (war/gewesen) and in Frost/frieren',['Nowhere','In Turkish k/ğ','In Zulu Palatalization'],'This is my analysis, and it fits chapter 12: frequent lexemes conserve relic alternations.')
+};
+
+const SECTIONS=[
+{title:'Frequent and rare values',steps:[
+ {type:'stage',cap:`Language use shapes language structure. <b>Token frequency</b> matters in inflection: values of the same feature differ in how often they are used, and their structure follows.`,
+  spec:S(R([tl('a','frequent','stem',3.4),tl('b','>','op',.8),tl('c','rare','aff',2.4)],'frequency asymmetry'),R([tl('d','short','ok',2.4),tl('e','differentiated','ok',5)],'structural asymmetry'))},
+ {type:'widget',cap:`Table 12.1. For each feature, the values from most to least frequent. These describe overall patterns, not every word.`,build:featWidget},
+ {type:'widget',cap:`Counting number values in six languages. The singular always wins, whichever text is counted.`,build:numWidget},
+ {type:'stage',cap:`Why? Partly structure: all verbs have a nominative argument, but only transitive ones an accusative, and subjunctives are mostly in subordinate clauses. But the ultimate reason is outside language: we talk more about single things, third persons and the present.`,
+  spec:S(R([tl('a','nominative','stem',3.8),tl('b','>','op',.8),tl('c','accusative','aff',3.4)],'every verb vs only transitive verbs'),R([tl('d','indicative','stem',3.4),tl('e','>','op',.8),tl('f','subjunctive','aff',3.6)],'main vs subordinate clauses'))},
+ {type:'quiz',cap:'Check yourself.',qs:[Q.a1,Q.a2,Q.a3,Q.a4]}
+]},
+{title:'Frequency and shortness',steps:[
+ {type:'stage',cap:`Frequent expressions are short. In French the most frequent words are de, le, la, et, les, while éléphant and questionnaire are rare. Frequent inflectional values may even be <b>zero</b>.`,
+  spec:S(R([tl('a','de','stem',1.6),tl('b','le','stem',1.6),tl('c','la','stem',1.6),tl('d','et','stem',1.6)],'frequent: short'),R([tl('e','questionnaire','aff',7)],'rare: long'))},
+ {type:'widget',cap:`The Udmurt noun paradigm. The tile width shows the length of the ending: watch it grow as the value gets rarer.`,build:b=>labWidget(b,UDM,'Add the ending','Back')},
+ {type:'widget',cap:`Verbs too. Tzutujil and Kobon have zero in the third person singular, and longer markers for rarer moods and tenses.`,build:b=>labWidget(b,ZERO,'Add the markers','Back')},
+ {type:'stage',cap:`Why? Frequent values are predictable, so speakers can afford shorter expressions. It is the same reason local phone calls need no area code: the common case is the default.`,
+  spec:S(R([tl('a','predictable','stem',4),tl('b','→','op',.8),tl('c','short or zero','ok',4)],'economy'))},
+ {type:'quiz',cap:'Check yourself.',qs:[Q.s1,Q.s2,Q.s3,Q.s4]}
+]},
+{title:'Frequency and differentiation',steps:[
+ {type:'stage',cap:`Frequent values are also more <b>differentiated</b>, in three senses. First: less <b>syncretism</b>, meaning fewer cells sharing one form.`,
+  spec:S(R([tl('a','frequent','stem',3.2),tl('b','→','op',.8),tl('c','many shapes','ok',3.6)],''),R([tl('d','rare','aff',2.2),tl('e','→','op',.8),tl('f','shared shapes','bad',4)],''))},
+ {type:'widget',cap:`Old English and Gothic. Violet tiles share a shape. The rarer the value (subjunctive, past, passive), the more sharing.`,build:parWidget},
+ {type:'stage',cap:`Second: inflection classes differ mostly in the <b>frequent</b> values. Russian nouns have at least twelve distinct singular endings but at most eight in the plural, and the rarer dative, locative and instrumental plural endings are shared. In Arabic the four active classes merge in the rarer passive.`,
+  spec:S(R([tl('a','yaqtulu','stem',3.2),tl('b','yaḍribu','stem',3.2),tl('c','yaḥfaẓu','stem',3.2),tl('d','yajmaʕu','stem',3.2)],'active imperfect: four vowel patterns'),R([tl('e','yuqtalu','var',3.2),tl('f','yuḍrabu','var',3.2),tl('g','yuḥfaẓu','var',3.2),tl('h','yujmaʕu','var',3.2)],'passive imperfect: one pattern'))},
+ {type:'stage',cap:`Third: more <b>cross-cutting</b> values. Latin has no future subjunctive: the rare combination is missing.`,
+  spec:S(R([tl('a','laudat','stem',2.6),tl('b','laudabat','stem',3.4),tl('c','laudabit','stem',3.2)],'indicative: present, past, future'),R([tl('d','laudet','aff',2.6),tl('e','laudaret','aff',3.4),tl('f','—','ghost',3.2)],'subjunctive: no future'))},
+ {type:'stage',cap:`The explanation is <b>memory strength</b>. A rare value is harder to remember in every detail, so classes and shapes collapse together, while frequent values keep their distinctions.`,
+  spec:S(R([tl('a','frequent value','stem',4.4),tl('b','→','op',.8),tl('c','strong memory','ok',4.2)],'details kept'),R([tl('d','rare value','aff',3.6),tl('e','→','op',.8),tl('f','weak memory','bad',4)],'details merge'))},
+ {type:'quiz',cap:'Check yourself.',qs:[Q.d1,Q.d2,Q.d3,Q.d4,Q.d5]}
+]},
+{title:'Local frequency reversals',steps:[
+ {type:'stage',cap:`The general ranking can be reversed for particular lexemes. Most nouns are commoner in the singular, but some are commoner in the plural, and structure follows the local frequency.`,
+  spec:S(R([tl('a','doctor','stem',3),tl('b','>','op',.8),tl('c','doctors','aff',3.4)],'typical noun'),R([tl('d','eye','stem',2.4),tl('e','<','op',.8),tl('f','eyes','aff',2.8)],'reversed: paired organs'))},
+ {type:'widget',cap:`Which form is commoner? Sort eight nouns.`,build:revSort},
+ {type:'widget',cap:`The structure follows. In Welsh the singular is marked for plural-heavy nouns. In derivation, female person nouns are usually derived from male ones, except where the frequency is reversed.`,build:b=>labWidget(b,WELSH,'Add the marker','Back')},
+ {type:'stage',cap:`Godoberi marks case only on inanimates, and the <b>subject</b> case is overt (hanqu-di) while the object is zero (hanqu-Ø). Inanimate nouns are more often objects, so the rarer value is the marked one.`,
+  spec:S(R([tl('a','hanqu','stem',2.6),tl('b','-di','aff',1.6)],'subject case: marked'),R([tl('c','hanqu','stem',2.6),tl('d','-Ø','ghost',1.6)],'object case: zero'))},
+ {type:'quiz',cap:'Check yourself.',qs:[Q.r1,Q.r2,Q.r3,Q.r4]}
+]},
+{title:'Analogical levelling',steps:[
+ {type:'stage',cap:`<b>Levelling</b> removes an alternation by extending one stem to the whole paradigm. English house/houses: [haʊs]/[haʊzəz] becomes [haʊs]/[haʊsəz]. It is always the singular stem that spreads, never [haʊz] for the singular.`,
+  spec:S(R([tl('s','[haʊs]','stem',3),tl('p','[haʊzəz]','mod',3.8)],'traditional'),R([tl('s2','[haʊs]','stem',3,{from:'s'}),tl('p2','[haʊsəz]','ok',3.8,{from:'p'})],'levelled: the singular stem wins'))},
+ {type:'widget',cap:`The stem that is extended is the more frequent one. West Frisian shows it clearly: for singular-heavy nouns the singular wins, for plural-heavy nouns the plural.`,build:b=>labWidget(b,LEV,'Level the paradigm','Back')},
+ {type:'stage',cap:`The explanation is again memory strength and speed of access: the frequent stem is retrieved quickly and can stand in when a speaker forgets the rarer one.`,
+  spec:S(R([tl('a','frequent stem','stem',5),tl('b','→','op',.8),tl('c','extended','ok',3)],''))},
+ {type:'quiz',cap:'Check yourself.',qs:[Q.l1,Q.l2,Q.l3]}
+]},
+{title:'Frequency and irregularity',steps:[
+ {type:'stage',cap:`Irregularities cluster in the most frequent lexemes: ‘be’, ‘do’, ‘go’, ‘come’, ‘say’. Old English has four totally irregular verbs, Welsh four, Koromfe a few, and Lango’s irregular nouns include ‘woman’, ‘man’, ‘person’ and ‘cattle’.`,
+  spec:S(R([tl('a','be','lex',1.6),tl('b','do','lex',1.6),tl('c','go','lex',1.6),tl('d','come','lex',2.2),tl('e','say','lex',1.8)],'irregular in language after language'))},
+ {type:'stage',cap:`Two causes. <b>Phonological reduction</b>: frequent forms are predictable, so they are pronounced less clearly. <b>Conservation</b>: frequent forms have strong memory, so they resist levelling.`,
+  spec:S(R([tl('a','reduction','mod',3.6),tl('b','speeds up phonological change','plain',9)],''),R([tl('c','conservation','lex',4),tl('d','slows down morphological change','plain',9)],''))},
+ {type:'widget',cap:`Examples of both. English have, say and make were regular, then reduced. Italian uomo and Bulgarian oči are old forms that memory conserved.`,build:b=>labWidget(b,IRR,'Show the change','Back')},
+ {type:'stage',cap:`Stem suppletion, like Welsh myn-/es-/aeth, is the least understood. It is hard to see why speakers merge forms of two lexemes, but once merged, frequency conserves the suppletion in the most frequent verbs.`,
+  spec:S(R([tl('a','myn-d','stem',2.6),tl('b','es i','mod',2.4),tl('c','aeth e','mod',3.2)],'Welsh ‘go’: three roots'))},
+ {type:'quiz',cap:'Check yourself.',qs:[Q.i1,Q.i2,Q.i3,Q.i4]}
+]},
+{title:'Exercises',steps:[
+ {type:'widget',cap:`Exercise 1: where are the expectations of shortness fulfilled, and where would they surprise us? Check the four paradigms.`,build:expWidget},
+ {type:'quiz',cap:`Exercises 2 and 3. The book gives no key, so the explanations are my analysis.`,qs:[Q.x2,Q.x3]},
+ {type:'widget',cap:`That is chapter 12. Here is what to take away.`,build:summaryWidget}
+]}
+];
+
+Lesson.start({label:'Chapter 12 · Frequency effects',sections:SECTIONS});
+</script>
+</body>
+</html>
