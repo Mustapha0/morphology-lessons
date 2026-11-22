@@ -12,7 +12,7 @@
   <h1>Understanding Morphology</h1>
   <p class="sub">Animated, interactive lessons based on Haspelmath and Sims (2010). Pick a chapter.</p>
   <div id="list"></div>
-  <p class="foot">Chapters 1 to 5 are ready; the greyed-out ones are coming. Each chapter has animations, interactive widgets and a quiz. Turn on 🔊 inside a lesson for narration.</p>
+  <p class="foot">Each chapter has animations, interactive widgets and a quiz. Turn on 🔊 inside a lesson for narration.</p>
 </div>
 <script>
 /* To add a chapter: copy chapter-template/ to chN/, then add one line here. */
@@ -22,13 +22,13 @@ const CHAPTERS=[
   {n:3,title:'Rules',href:'ch3/index.html',blurb:'Affixation, base modification, reduplication and conversion; morpheme-based vs word-based rules.'},
   {n:4,title:'Lexicon',href:'ch4/index.html',blurb:'What speakers store: morphemes or word-forms? Economy, productivity, and the race between two routes of lexical access.'},
   {n:5,title:'Inflection and derivation',href:'ch5/index.html',blurb:'Inflectional values and derivational meanings, eleven diagnostic criteria, dichotomy vs continuum, and split morphology.'},
-  {n:6,title:'Productivity',href:'ch6/index.html',soon:true,blurb:'Speakers’ knowledge of productivity, creativity and gradience, restrictions on word-formation rules, and measuring productivity.'},
-  {n:7,title:'Morphological trees',href:'ch7/index.html',soon:true,blurb:'Compounding types, hierarchical word structure, and parallels between syntax and morphology.'},
-  {n:8,title:'Inflectional paradigms',href:'ch8/index.html',soon:true,blurb:'Inflection classes, inheritance hierarchies, stems, syncretism, form-meaning mismatches and periphrasis.'},
-  {n:9,title:'Words and phrases',href:'ch9/index.html',soon:true,blurb:'Compounds vs phrases, free vs bound forms, clitics vs affixes, and lexical integrity.'},
-  {n:10,title:'Morphophonology',href:'ch10/index.html',soon:true,blurb:'Two types of alternations, their productivity and history, and morphophonology as phonology or as morphology.'},
-  {n:11,title:'Morphology and valence',href:'ch11/index.html',soon:true,blurb:'Valence-changing operations, valence in compounding, and transpositional derivation and inflection.'},
-  {n:12,title:'Frequency effects in morphology',href:'ch12/index.html',soon:true,blurb:'Asymmetries in inflectional values, analogical levelling, and frequency and irregularity.'}
+  {n:6,title:'Productivity',href:'ch6/index.html',blurb:'Speakers’ knowledge of productivity, creativity and gradience, restrictions on word-formation rules, and measuring productivity.'},
+  {n:7,title:'Morphological trees',href:'ch7/index.html',blurb:'Compounding types, hierarchical word structure, and parallels between syntax and morphology.'},
+  {n:8,title:'Inflectional paradigms',href:'ch8/index.html',blurb:'Inflection classes, inheritance hierarchies, stems, syncretism, form-meaning mismatches and periphrasis.'},
+  {n:9,title:'Words and phrases',href:'ch9/index.html',blurb:'Compounds vs phrases, free vs bound forms, clitics vs affixes, and lexical integrity.'},
+  {n:10,title:'Morphophonology',href:'ch10/index.html',blurb:'Two types of alternations, their productivity and history, and morphophonology as phonology or as morphology.'},
+  {n:11,title:'Morphology and valence',href:'ch11/index.html',blurb:'Valence-changing operations, valence in compounding, and transpositional derivation and inflection.'},
+  {n:12,title:'Frequency effects in morphology',href:'ch12/index.html',blurb:'Asymmetries in inflectional values, analogical levelling, and frequency and irregularity.'}
 ];
 const list=document.getElementById('list');
 CHAPTERS.forEach(c=>{
