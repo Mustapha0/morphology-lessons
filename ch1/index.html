@@ -1,1 +1,249 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>Chapter 1 · Introduction · Understanding Morphology</title>
+<link rel="stylesheet" href="../assets/lesson.css">
+</head>
+<body>
+<script src="../assets/lesson.js"></script>
+<script>
+const {el,seg,T,tl,R,S,chg,mark,strip,shuffle,Stage,app,quizWidget,labWidget,sort3Widget}=Lesson;
+const W=t=>Math.max(1,t.length*0.5+0.4);
+const tw=(id,t,k='stem',x={})=>tl(id,t,k,W(t),x);
+const ph=(id,t,k='plain',x={})=>tl(id,t,k,1,x);
 
+/* Object row + gloss row, columns aligned. list = [[object, gloss, kind], ...] */
+function glossRows(list){
+  const a=[],b=[];
+  list.forEach(([o,g,k],i)=>{const w=Math.max(W(o),W(g)*0.9);
+    a.push(tl('o'+i,o,k||'stem',w));b.push(tl('g'+i,g,'plain',w,{enter:'bottom'}));});
+  return {a,b};
+}
+
+/* ---------- Widget: degree of synthesis (Table 1.1) ---------- */
+function synthWidget(box){
+  const D=[
+    ['West Greenlandic',3.72,'<b>Polysynthetic.</b> An extraordinary amount of morphology, and many compounds.'],
+    ['Sanskrit',2.59,'Table 1.1 gives 2.59 morphemes per word. It sits on the synthetic side of the continuum.'],
+    ['Swahili',2.55,'<b>Synthetic.</b> Morphology plays an important role, as in <i>wa-ki-song-ana</i> in example (1.4).'],
+    ['Old English',2.12,'Table 1.1 gives 2.12. Old English had clearly more morphology than Modern English.'],
+    ['Lezgian',1.93,'<b>Synthetic.</b> The authors added this value themselves; the others are from Greenberg (1959).'],
+    ['German',1.92,'Table 1.1 gives 1.92, almost the same as Lezgian.'],
+    ['Modern English',1.68,'<b>Analytic.</b> Morphology plays a modest role, though still much more than in Yoruba or Vietnamese.'],
+    ['Vietnamese',1.06,'<b>Isolating.</b> Almost no morphology: about one morpheme per word.']];
+  const res=el('div','res','Tap a language. A longer bar means more morphemes per word.');
+  const bars=[];
+  D.forEach(([n,r,note])=>{
+    const b=el('button','ebar',`<span>${n}</span><div class="bt"><i class="mo"></i></div><span>${r.toFixed(2)}</span>`);
+    b.style.cssText='background:none;border:0;padding:0;width:100%;text-align:left;grid-template-columns:118px 1fr 40px';
+    b.onclick=()=>{res.innerHTML=`<b>${n}</b>: ${r} morphemes per word.<br>${note}`;};
+    box.append(b);bars.push([b.querySelector('i'),r]);});
+  box.append(res);
+  requestAnimationFrame(()=>requestAnimationFrame(()=>bars.forEach(([i,r])=>{i.style.width=(r/4*100)+'%';})));
+}
+
+/* ---------- Widget: list versus rule (goals i and ii) ---------- */
+function pluralWidget(box){
+  const LIST={abbot:'abbots',ability:'abilities',abyss:'abysses',accent:'accents'};
+  const host=el('div','stage'),inp=el('input'),btn=el('button','btn','Form the plural'),res=el('div','res');
+  inp.type='text';inp.value='duduk';inp.maxLength=12;inp.autocapitalize='off';inp.autocomplete='off';inp.setAttribute('aria-label','English noun');
+  const row=el('div','chips');row.append(inp,btn);
+  box.append(el('p','gl','Type a singular noun. The “dumb program” only has the four entries abbot, ability, abyss, accent.'),row,host,res);
+  const st=new Stage(host);
+  function run(){
+    const w=(inp.value||'duduk').trim().toLowerCase().replace(/[^a-z]/g,'')||'duduk';
+    const found=Object.prototype.hasOwnProperty.call(LIST,w);
+    const top=found?[tw('l1',LIST[w],'ok')]:[tl('l1','no entry','bad',3.4)];
+    st.set(S(R(top,found?'list lookup: found':'list lookup: nothing to return'),
+             R([tw('w'+w,w,'stem'),tl('s','s','aff',1,{enter:'right'})],'rule: singular + s')));
+    if(found){res.className='res good';res.innerHTML=`<span class="w">${w}</span> is on the list, so both methods work. (In spelling, the rule’s -s adjusts; the sound pattern is the point.)`;}
+    else{res.className='res good';res.innerHTML=`The list has no entry for <span class="w">${w}</span>, so it fails. The rule gives the plural at once. English speakers do this: told that a musical instrument is a <i>duduk</i>, they know the plural is <i>duduks</i>.`;}
+  }
+  btn.onclick=run;inp.addEventListener('keydown',e=>{if(e.key==='Enter')run();});
+  requestAnimationFrame(run);
+}
+
+/* ---------- Widget: a universal and four languages (goal iii) ---------- */
+function universalWidget(box){
+  const D=[
+    {n:'English',p:1,t:1,d:'Most nouns have plurals, people nouns included. The statement holds.'},
+    {n:'Yoruba',p:0,t:0,d:'No morphological plurals at all (plurality is a separate word, or left implicit). The “if” is not met, so the statement is still true.'},
+    {n:'Tzutujil',p:1,t:0,d:'Only human nouns have regular plural forms (Dayley 1985). This fits the statement exactly.'},
+    {n:'Imaginary language',p:0,t:1,d:'Plurals for things but not for people. This is the one pattern the statement says we should <b>not</b> find, and no real language is known to show it.'}];
+  const chips=el('div','chips'),host=el('div','stage'),res=el('div','res');
+  box.append(el('p','gl','If a language has morphological plurals at all, it has plurals of nouns denoting people.'),chips,host,res);
+  const st=new Stage(host);
+  const ces=D.map((x,i)=>{const c=el('button','chip',x.n);c.onclick=()=>pick(i);chips.append(c);return c;});
+  function pick(i){
+    const x=D[i];ces.forEach((c,j)=>{c.classList.toggle('on',j===i);});ces[i].classList.add('done');
+    st.set(S(R([tw('a','people nouns',x.p?'ok':'ghost',{}),tw('b','thing nouns',x.t?'ok':'ghost')],'solid outline: has a morphological plural · dashed: none')));
+    const violated=(x.t&&!x.p);
+    res.className='res '+(violated?'bad':'good');res.innerHTML=`<b>${x.n}.</b> ${x.d}`;
+  }
+  requestAnimationFrame(()=>pick(0));
+}
+
+/* ---------- Widget: reading conventions ---------- */
+function conventionsWidget(box){
+  const ul=el('ul','pts');
+  [['Italics','Examples in conventional spelling are italic. Examples in phonetic transcription are plain and usually in [square brackets].'],
+   ['Asterisk','* marks a nonexistent or impossible expression, such as *heye or *blit.'],
+   ['Sources','Data from less familiar languages is followed by a reference. Well-known languages (English, Russian, Standard Arabic) get none.'],
+   ['Glosses','Examples from unfamiliar languages come with a morpheme-by-morpheme gloss and a free translation. Chapter 2 explains how to read them.'],
+   ['Glossary','Technical terms are in bold where first discussed, and listed in the glossary with page references.'],
+   ['Language index','Gives each language’s family, location and ISO 639-3 code. Ethnologue is a good place to look a language up.'],
+   ['Exercises','Comprehension exercises have answers at the back. Exploratory exercises are open-ended, with no answers.'],
+   ['Scope','Only spoken languages are covered. Sign languages have morphology too; the authors say they lack the competence to treat them.']]
+  .forEach(([a,b])=>ul.append(el('li','',`<span class="pill">${a}</span>${b}`)));
+  box.append(ul);
+}
+
+/* ---------- Widget: Tzutujil verb builder (exercise 3) ---------- */
+function tzutWidget(box){
+  const ATT=new Set(['xinwari','neeli','ne7eeli','nixwari','xateeli','natwari','xoqeeli','ninwari','xixwari','xe7eeli','xwari']);
+  const TENSE=[['past','x'],['present','n']];
+  const PERS=[['I','in'],['you (sg)','at'],['he or she',''],['we','oq'],['you (pl)','ix'],['they','e7']];
+  const VERB=[['sleep','wari','slept','sleep'],['leave','eeli','left','leave']];
+  let t=0,p=0,v=0;
+  const grp=(title,list,get,set)=>{const g=el('div','chips');const cs=list.map((x,i)=>{const c=el('button','chip',x[0]);c.onclick=()=>{set(i);draw();};g.append(c);return c;});
+    box.append(el('p','gl',title),g);return ()=>cs.forEach((c,i)=>c.classList.toggle('on',i===get()));};
+  const s1=grp('Tense',TENSE,()=>t,i=>t=i),s2=grp('Subject',PERS,()=>p,i=>p=i),s3=grp('Verb',VERB,()=>v,i=>v=i);
+  const host=el('div','stage'),res=el('div','res');box.append(host,res);
+  const st=new Stage(host);
+  function draw(){
+    s1();s2();s3();
+    const T_=TENSE[t],P=PERS[p],V=VERB[v];
+    const word=T_[1]+P[1]+V[1];
+    const form=t===0?V[2]:(p===2?V[3]+'s':V[3]);
+    const subj=P[0].startsWith('you')?'you':P[0];
+    st.set(S(R([tl('t',T_[1],'mod',1.3),P[1]?tw('p',P[1],'aff'):tl('p','∅','ghost',1),tw('r',V[1],'stem')],T_[0]+' · '+P[0]+' · '+V[0])));
+    const att=ATT.has(word);
+    res.className='res '+(att?'good':'');
+    res.innerHTML=`<span class="w">${word}</span> “${subj} ${form}”<br><small>${att?'This exact form is in the exercise data.':'Not in the exercise data: this is a prediction from the pattern.'}</small>`;
+  }
+  requestAnimationFrame(draw);
+}
+
+/* ---------- Questions ---------- */
+const Q={
+ m1:{id:'m1',q:'Why is hear not analysed as h + ear (‘use one’s ear’)?',
+  o:['Only this one pair shows the pattern: there is no *heye or *helbow','Because ear is a verb','Because h is a vowel','Because hear is too short'],a:0,
+  w:'Morphological structure needs the same partial resemblance in form and meaning to recur across a group of words. One pair is an accident.'},
+ m2:{id:'m2',q:'What are the smallest meaningful constituents of words called?',o:['Phonemes','Morphemes','Lexemes','Syllables'],a:1,
+  w:'In nut-s both nut and -s are morphemes. Single sounds such as [n] or [t] have only contrastive value.'},
+ m3:{id:'m3',q:'Why does the book prefer Definition 1 (systematic covariation of form and meaning) to Definition 2 (combining morphemes)?',
+  o:['Definition 2 is wrong for every word','Not every morphological pattern can be described as putting parts together, as later chapters show','Definition 1 is shorter','Syntax needs it'],a:1,
+  w:'Definition 2 looks simpler and mirrors syntax, but it does not work in all cases (see Chapters 3 and 4).'},
+ l1:{id:'l1',q:'Which language is usually called isolating?',o:['Vietnamese','Swahili','Lezgian','West Greenlandic'],a:0,
+  w:'Yoruba and Vietnamese have almost no morphology. Swahili and Lezgian are synthetic, and West Greenlandic is polysynthetic.'},
+ l2:{id:'l2',q:'The degree of synthesis of a language is…',o:['The number of words per sentence','The ratio of morphemes per word in a random text sample','The number of affixes in its dictionary','The number of cases it has'],a:1,
+  w:'Table 1.1 gives these ratios, from West Greenlandic (3.72) down to Vietnamese (1.06).'},
+ l3:{id:'l3',q:'The analytic–synthetic distinction is…',o:['A two-way split','A three-way split only','A continuum','Only about word order'],a:2,
+  w:'The book calls it neither a bipartition nor a tripartition but a continuum from radically isolating to highly polysynthetic.'},
+ g1:{id:'g1',q:'Which goal asks “why are the patterns the way they are?”',
+  o:['Elegant description','Cognitively realistic description','System-external explanation','Restrictive architecture'],a:2,
+  w:'Explanation goes beyond describing. System-external explanations point to facts outside the grammar, such as how useful number distinctions are in speech.'},
+ g2:{id:'g2',q:'Why can an English speaker form the plural of a brand-new noun like duduk?',
+  o:['They have memorised every plural','Their knowledge includes a general rule, not only a list','Plurals are universal','All nouns take -s'],a:1,
+  w:'A program with only lists of singulars and plurals fails on new words; speakers do not.'},
+ g3:{id:'g3',q:'The fact that the English plural is -s (Hungarian -k, Swedish -r, Hebrew -im/-ot) is…',
+  o:['A universal','A historical accident, which cannot be explained','Evidence of Universal Grammar','Caused by sentence structure'],a:1,
+  w:'Most facts about particular patterns are historical accidents. Explanations are sought for universals instead.'},
+ g4:{id:'g4',q:'Why is *What can we buy a __-board? impossible?',
+  o:['Fronting rules are syntactic and cannot reach inside a word; morphology is a separate component','Board is not a noun','Questions cannot contain compounds','The word what is too long'],a:0,
+  w:'Fronting can move words or phrases, not morphemes that are parts of larger words. Keeping the components separate predicts this automatically.'},
+ g5:{id:'g5',q:'The functionalist orientation in morphology mainly seeks…',
+  o:['A restrictive architecture for description','System-external explanation','Pure listing of data','Elegant notation'],a:1,
+  w:'The generative (formalist) orientation looks for the principles of an innate grammatical architecture. The book pursues both goals together.'}
+};
+
+/* ---------- Lesson ---------- */
+const SECTIONS=[
+ {title:'What is morphology?',steps:[
+  {type:'stage',cap:'Morphology is the study of the <b>internal structure of words</b>. It is both the oldest and one of the youngest parts of grammar. The oldest known grammatical texts (clay tablets, about 1600 BCE) are lists of Sumerian word forms like these.',
+   spec:S(R([tw('s1','badu','stem')],'badu ‘he goes away’'),R([tw('s2','badu','stem'),tl('s3','un','aff',1.2,{enter:'right'})],'baduun ‘I go away’'))},
+  {type:'stage',cap:'Words have structure in two different senses. First, <b>sounds</b>: <b>nuts</b> is four phonological segments. Single segments carry no meaning of their own, only contrast: nuts, cuts, guts, shuts.',
+   spec:S(R([ph('n','n'),ph('v','ʌ'),ph('t','t'),ph('s','s')],'phonological structure: [nʌts], four segments'))},
+  {type:'stage',cap:'Second, <b>form and meaning vary together</b>. Nuts, nights, necks share a final [s] and a shared meaning: more than one. Drop the [s] and you get one.',
+   spec:S(R([tw('a1','nut','stem'),tl('a2','s','aff',1)],'final [s] = several'),R([tw('b1','night','stem'),tl('b2','s','aff',1)],''),R([tw('c1','neck','stem'),tl('c2','s','aff',1)],''))},
+  {type:'stage',cap:'Not every final [s] is meaningful. <b>Lapse</b>, <b>box</b> and <b>blitz</b> do not mean “several”, and there are no related words *lap, *bok, *blit. They are not morphologically complex.',
+   spec:S(R([tw('l1','lapse','plain'),tw('l2','box','plain'),tw('l3','blitz','plain')],'no plural meaning'),R([tw('x1','*lap','bad'),tw('x2','*bok','bad'),tw('x3','*blit','bad')],'no such words'))},
+  {type:'stage',cap:'<b>Definition 1.</b> Morphology is the study of <b>systematic covariation in the form and meaning of words</b>. Systematic means it recurs across a group of words.',
+   spec:S(R([tw('f1','nut','stem')],'form: nut · meaning: one'),R([tw('f2','nut','stem'),tl('f3','s','aff',1)],'form: nut + s · meaning: several'))},
+  {type:'stage',cap:'Two words alone prove nothing. Is <b>hear</b> h + ear, ‘use one’s ear’? No: there is no *heye or *helbow. The resemblance is an accident.',
+   spec:S(R([tl('h','h','mod'),tw('ear','ear','stem')],'h-ear = “use one’s ear”?'),R([tw('he','*heye','bad'),tw('hl','*helbow','bad')],'the pattern does not recur'))},
+  {type:'stage',cap:'Morphological analysis breaks words into <b>morphemes</b>, the smallest meaningful constituents. <b>Definition 2.</b> Morphology is the study of the combination of morphemes to yield words. It looks simpler, but it will not cover every case.',
+   spec:S(R([tw('h1','hope','stem'),tw('l1','less','aff')],'hope-less: 2 morphemes'),R([tw('h2','hope','stem'),tw('l2','less','aff'),tw('n2','ness','aff')],'hope-less-ness: 3 morphemes'))},
+  {type:'widget',cap:'Is the word morphologically complex? Look for a group of words with the same partial resemblance.',
+   build:box=>sort3Widget(box,[
+    ['nuts','c','nut-s: compare night/nights, neck/necks.'],
+    ['lapse','s','The final [s] means nothing here and there is no *lap.'],
+    ['cheeseboard','c','cheese + board: two morphemes.'],
+    ['box','s','No *bok, and no plural meaning.'],
+    ['hopeless','c','hope-less, compare hopeful and helpless.'],
+    ['hear','s','Only one pair with ear, so the resemblance is accidental.'],
+    ['blitz','s','No *blit: the ending is just part of the word.']],
+    {c:'Complex',s:'Not complex'})},
+  {type:'quiz',cap:'Check yourself.',qs:[Q.m1,Q.m2,Q.m3]}
+ ]},
+ {title:'Across languages',steps:[
+  {type:'stage',cap:'Morphology is not equally prominent everywhere. English marks plural with morphology. <b>Yoruba</b> uses a separate word (and often leaves plurality unmarked).',
+   spec:S(R([tw('e1','nut','stem'),tl('e2','s','aff',1)],'English: nuts'),R([tw('y1','àwọn','lex'),tw('y2','ọkùnrin','stem')],'Yoruba: àwọn ọkùnrin ‘the men’'))},
+  {type:'stage',cap:'Many languages use <b>more</b> morphology than English. Sumerian marks who goes with an ending, where English needs a separate pronoun.',
+   spec:S(R([tw('a','badu','stem')],'badu ‘he goes away’'),R([tw('b','badu','stem'),tl('c','un','aff',1.2)],'baduun ‘I go away’'),R([tw('d','ing̃en','stem')],'ing̃en ‘he went’'),R([tw('e','ing̃en','stem'),tl('f','en','aff',1.2)],'ing̃enen ‘I went’'))},
+  {type:'stage',cap:'Languages with little morphology are <b>analytic</b> (Yoruba, Vietnamese, English), and with much, <b>synthetic</b> (Sumerian, Swahili, Lezgian). With an extraordinary amount plus many compounds, <b>polysynthetic</b>. West Greenlandic packs a whole clause into one word.',
+   spec:(()=>{const g=glossRows([['paasi','understand'],['nngil','not'],['luinnar','completely'],['para','1sg.sbj.3sg.obj.ind','aff']]);
+     return S(R(g.a,'West Greenlandic: Paasi-nngil-luinnar-para (…)'));})()},
+  {type:'stage',cap:'Here is the gloss for each piece. The sentence it begins means ‘I didn’t understand at all that you wanted to come along.’',
+   spec:(()=>{const g=glossRows([['paasi','understand'],['nngil','not'],['luinnar','completely'],['para','1sg.sbj.3sg.obj.ind','aff']]);
+     return S(R(g.a,'one word, four morphemes'),R(g.b,'gloss'));})()},
+  {type:'widget',cap:'The scale is a <b>continuum</b>. A language’s <b>degree of synthesis</b> is the ratio of morphemes per word in a text sample.',build:synthWidget},
+  {type:'quiz',cap:'Check yourself.',qs:[Q.l1,Q.l2,Q.l3]}
+ ]},
+ {title:'Goals of research',steps:[
+  {type:'stage',cap:'Morphological research aims to describe and explain. There are four sub-goals. <b>(i) Elegant description.</b> One rule, “add -s to a singular noun”, beats listing abbot–abbots, ability–abilities, abyss–abysses… The main criterion is <b>generality</b>.',
+   spec:S(R([tw('r1','noun','var'),tl('r2','s','aff',1)],'one general rule'),R([tw('a','abbots','plain'),tw('b','abysses','plain'),tw('c','accents','plain')],'versus a list of every plural'))},
+  {type:'widget',cap:'<b>(ii) Cognitively realistic description.</b> A description should match what speakers’ minds have unconsciously worked out. Compare a list with a rule on a word it has never seen.',build:pluralWidget},
+  {type:'widget',cap:'<b>(iii) System-external explanation.</b> Most facts are historical accidents (why -s?). So linguists look at <b>universals</b>. This one concerns plurals. Try four languages.',build:universalWidget},
+  {type:'stage',cap:'A possible explanation: when nouns denote people, it matters more how many there are. Such an explanation refers to facts <b>outside</b> the language system, which is why it is called system-external.',
+   spec:S(R([tw('p','people','ok'),tl('q','→','op',1),tw('r','plural useful','var')],'more useful ⇒ more likely to have plurals'))},
+  {type:'stage',cap:'<b>(iv) A restrictive architecture.</b> Fronting a question word can move a whole word out of a sentence: <i>We can buy cheese</i> → <i>What can we buy __?</i>',
+   spec:S(R([tw('we','we','plain'),tw('can','can','plain'),tw('buy','buy','plain'),tw('ch','cheese','stem')],'We can buy cheese.'))},
+  {type:'stage',cap:'The word <i>what</i> moves to the front, leaving a gap.',
+   spec:S(R([tw('wh','what','mod',{from:'ch'}),tw('can','can','plain'),tw('we','we','plain'),tw('buy','buy','plain'),tl('gap','__','ghost',1)],'What can we buy __?'))},
+  {type:'stage',cap:'Now try it on a compound: <i>We can buy a cheeseboard.</i> Fronting just <i>cheese</i> out of <i>cheeseboard</i> is impossible.',
+   spec:S(R([tw('we','we','plain'),tw('can','can','plain'),tw('buy','buy','plain'),tw('a','a','plain'),tw('ch','cheese','stem'),tw('bo','board','stem')],'We can buy a cheeseboard.'))},
+  {type:'stage',cap:'*<i>What can we buy a __-board?</i> is out. This follows automatically if fronting (syntax) and compounding (morphology) belong to <b>separate components</b> of the grammar.',
+   spec:S(R([tw('wh','what','bad',{from:'ch'}),tw('can','can','plain'),tw('we','we','plain'),tw('buy','buy','plain'),tw('a','a','plain'),tl('gap','__','bad',1),tw('bo','board','stem')],'*What can we buy a __-board?'))},
+  {type:'stage',cap:'This is the architecture in Figure 1.1: morphology, syntax and phonology are separate boxes. Many linguists treat such design principles as innate (<b>Universal Grammar</b>).',
+   spec:S(R([tl('m','morphology','lex',4.4),tl('s','syntax','lex',3.2),tl('p','phonology','lex',4.2)],'separate components: meanings ⇒ morphology ⇒ syntax ⇒ phonology ⇒ sound'))},
+  {type:'quiz',cap:'Check yourself. The functionalist orientation chases system-external explanation; the generative one, the innate architecture. The book pursues both.',qs:[Q.g1,Q.g2,Q.g3,Q.g4,Q.g5]}
+ ]},
+ {title:'Reading the book',steps:[
+  {type:'widget',cap:'A short user’s guide to the conventions used in the book.',build:conventionsWidget}
+ ]},
+ {title:'Practice',steps:[
+  {type:'widget',cap:'Exercise 1 in the book asks which English words are complex. Try some of them. (The hint in each answer is evidence of the kind the exercise asks for.)',
+   build:box=>sort3Widget(box,[
+    ['nights','c','night-s: compare night, nights, necks…'],
+    ['owl','s','No related shorter word; not complex.'],
+    ['playing','c','play-ing: compare play, reading, singing.'],
+    ['affordable','c','afford-able: compare afford, readable, washable.'],
+    ['indecent','c','in-decent: compare decent, inactive, active.'],
+    ['indolent','s','There is no *dolent, so in- is not a separable part here.'],
+    ['bubble','s','Nothing shorter systematically related.'],
+    ['redo','c','re-do: compare do, rewrite, write.']],
+    {c:'Complex',s:'Not complex'})},
+  {type:'widget',cap:'Exercise 3: Tzutujil verbs. Build a verb from three parts: tense prefix, subject prefix and root. Then check the three forms the exercise asks for: <b>I left</b>, <b>he or she sleeps</b>, <b>we sleep</b>. (x is pronounced [ʃ] and 7 is [ʔ].)',build:tzutWidget},
+  {type:'widget',cap:'<b>Summary of Chapter 1.</b> Morphology is most simply the study of how morphemes combine into words, but the more abstract definition, the study of <b>systematic covariation of form and meaning</b>, will prove better. Languages differ strongly in how much morphology they use. Research aims at elegant and cognitively realistic description, plus system-external explanation and a restrictive architecture.',
+   build:box=>box.append(el('p','res','Next: Chapter 2 introduces lexemes, word-forms, affixes, roots and allomorphs.'))}
+ ]}
+];
+
+Lesson.start({label:'Chapter 1 · Introduction',sections:SECTIONS});
+</script>
+</body>
+</html>
