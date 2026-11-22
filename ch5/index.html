@@ -1,1 +1,341 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>Chapter 5 · Inflection and derivation · Understanding Morphology</title>
+<link rel="stylesheet" href="../assets/lesson.css">
+</head>
+<body>
+<script src="../assets/lesson.js"></script>
+<script>
+const {el,seg,T,tl,R,S,chg,mark,strip,shuffle,Stage,app,quizWidget,labWidget,sort3Widget}=Lesson;
+const W=(s,k='stem',x=0)=>tl('',s,k,s.length*.58+.9+x);   // helper: width from length
 
+/* ---------- Feature grid (paradigm explorer) ---------- */
+function gridWidget(box,cfg){
+  const sel={};cfg.features.forEach(f=>sel[f.k]=f.vals[0]);
+  const host=el('div','stage'),res=el('div','res');const btns=[];
+  cfg.features.forEach(f=>{box.append(el('p','gl',f.k));const ch=el('div','chips');
+    f.vals.forEach(v=>{const b=el('button','chip',v);b.onclick=()=>{sel[f.k]=v;draw();};ch.append(b);btns.push([f.k,v,b]);});box.append(ch);});
+  box.append(host,res);const st=new Stage(host);
+  const key=s=>cfg.features.map(f=>s[f.k]).join('|');
+  const product=()=>{let out=[{}];cfg.features.forEach(f=>{const n=[];out.forEach(o=>f.vals.forEach(v=>n.push({...o,[f.k]:v})));out=n;});return out;};
+  function draw(){
+    btns.forEach(([k,v,b])=>b.classList.toggle('on',sel[k]===v));
+    const form=cfg.form(sel);
+    const top=form==null?[tl('X','—','bad',2)]:form.split('-').map((p,i)=>tl('P'+i,p,i===0?'stem':'aff',p.length*.6+.9));
+    const rows=[R(top,form==null?'no such form':'word-form')];
+    cfg.features.forEach((f,i)=>rows.push(R([tl('F'+i,f.k+': '+sel[f.k],'plain',(f.k.length+sel[f.k].length+2)*.52+.8)],i===0?'feature-value notation':'')));
+    st.set(S(...rows));
+    const same=form==null?[]:product().filter(s=>key(s)!==key(sel)&&cfg.form(s)===form);
+    res.className='res '+(form==null?'bad':'good');res.innerHTML=cfg.note(sel,form,same);
+  }
+  draw();
+}
+const LAT=(()=>{const F={'nominative|singular':'insul-a','nominative|plural':'insul-ae','accusative|singular':'insul-am','accusative|plural':'insul-ās',
+  'genitive|singular':'insul-ae','genitive|plural':'insul-ārum','dative|singular':'insul-ae','dative|plural':'insul-īs','ablative|singular':'insul-ā','ablative|plural':'insul-īs'};return F;})();
+function latinCase(box){
+  gridWidget(box,{features:[{k:'case',vals:['nominative','accusative','genitive','dative','ablative']},{k:'number',vals:['singular','plural']}],
+    form:s=>LAT[s.case+'|'+s.number],
+    note:(s,f,same)=>`<span class="w">${f.replace('-','')}</span> is the ${s.case} ${s.number} of <i>insula</i> ‘island’.`+
+      (same.length?`<br>The same form also fills: ${same.map(x=>x.case+' '+x.number).join('; ')}.`:'<br>This form belongs to one cell only.')+
+      `<br><small>Every case combines with every number: ten cells, ten word-forms.</small>`});
+}
+const TAM={'indicative|infectum|present':'canta-t','indicative|infectum|past':'canta-ba-t','indicative|infectum|future':'canta-bi-t',
+  'indicative|perfectum|present':'canta-v-it','indicative|perfectum|past':'canta-v-era-t','indicative|perfectum|future':'canta-v-eri-t',
+  'subjunctive|infectum|present':'cant-e-t','subjunctive|infectum|past':'canta-re-t','subjunctive|perfectum|present':'canta-v-eri-t','subjunctive|perfectum|past':'canta-v-isse-t'};
+function latinTAM(box){
+  gridWidget(box,{features:[{k:'mood',vals:['indicative','subjunctive']},{k:'aspect',vals:['infectum','perfectum']},{k:'tense',vals:['present','past','future']}],
+    form:s=>TAM[s.mood+'|'+s.aspect+'|'+s.tense]||null,
+    note:(s,f)=>f==null?`<b>A gap:</b> Latin has no future subjunctive. Mood, aspect and tense do not combine freely, which is why many linguists treat them as one feature.`
+      :`<span class="w">${f.replace(/-/g,'')}</span>: third person singular of <i>cantāre</i>.`});
+}
+
+/* ---------- Lezgian paradigm ---------- */
+function lezgianWidget(box){
+  const AS={imperfective:'zawa',perfect:'nawa',habitual:'da'};
+  const form=s=>['kat',AS[s.aspect],s.polarity==='negative'?'č':'',s.tense==='past'?(s.polarity==='negative'?'ir':'j'):''].filter(Boolean).join('-');
+  const GL={'imperfective|affirmative|past':'‘was running’','habitual|negative|past':'‘would not run’'};
+  gridWidget(box,{features:[{k:'aspect',vals:Object.keys(AS)},{k:'polarity',vals:['affirmative','negative']},{k:'tense',vals:['present','past']}],form,
+    note:(s,f)=>`<span class="w">${f.replace(/-/g,'')}</span> ${GL[s.aspect+'|'+s.polarity+'|'+s.tense]||''}<br><small>Affirmative and present are marked by nothing (-Ø). Past is -j, but -ir after the negative -č.</small>`});
+  const b=el('button','btn ghost','Show all 12 cells'),out=el('div');box.append(b,out);let on=false;
+  b.onclick=()=>{on=!on;b.textContent=on?'Hide the grid':'Show all 12 cells';out.innerHTML='';if(!on)return;
+    ['present','past'].forEach(t=>{const tb=el('table','tb');tb.innerHTML=`<tr><th>${t} tense</th>${Object.keys(AS).map(a=>`<th>${a}</th>`).join('')}</tr>`+
+      ['affirmative','negative'].map(p=>`<tr><td>${p}</td>${Object.keys(AS).map(a=>`<td>${form({aspect:a,polarity:p,tense:t}).replace(/-/g,'')}</td>`).join('')}</tr>`).join('');out.append(tb);});};
+}
+
+/* ---------- Derivation explorer ---------- */
+const DER={
+ Nouns:[
+  ['agent noun','English','drink','V',[['drink','stem'],['-er','aff']],'N','‘one who drinks’'],
+  ['patient noun','English','invite','V',[['invit','stem'],['-ee','aff']],'N','‘one who is invited’'],
+  ['instrument noun','Spanish','picar','V',[['pica','stem'],['-dor','aff']],'N','‘mince’ → ‘meat grinder’'],
+  ['quality noun','English','kind','A',[['kind','stem'],['-ness','aff']],'N','‘kind’ → ‘kindness’'],
+  ['diminutive noun','Spanish','gato','N',[['gat','stem'],['-it','aff'],['-o','aff']],'N','‘cat’ → ‘little cat’'],
+  ['status noun','English','child','N',[['child','stem'],['-hood','aff']],'N','‘child’ → ‘childhood’'],
+  ['female noun','German','König','N',[['König','stem'],['-in','aff']],'N','‘king’ → ‘queen’']],
+ Verbs:[
+  ['causative','Korean','cwuk-','V',[['cwuk','stem'],['-i','aff']],'V','‘die’ → ‘kill’'],
+  ['repetitive','English','write','V',[['re-','aff'],['write','stem']],'V','‘write’ → ‘rewrite’'],
+  ['desiderative','Greenlandic','sini-','V',[['sini','stem'],['-kkuma','aff']],'V','‘sleep’ → ‘want to sleep’'],
+  ['anticausative','Swedish','öppna','V',[['öppna','stem'],['-s','aff']],'V','‘open (tr.)’ → ‘open (intr.)’'],
+  ['“act like N”','Spanish','pirata','N',[['pirat','stem'],['-ear','aff']],'V','‘pirate’ → ‘act like a pirate’'],
+  ['“put into N”','English','bottle','N',[['bottle','stem']],'V','noun → verb with no change of form (conversion)'],
+  ['factitive','Russian','černyj','A',[['čern','stem'],['-it’','aff']],'V','‘black’ → ‘make black’'],
+  ['inchoative','Spanish','verde','A',[['verde','stem'],['-ar','aff']],'V','‘green’ → ‘become green’']],
+ Adjectives:[
+  ['facilitative','Basque','jan','V',[['jan','stem'],['-garri','aff']],'A','‘eat’ → ‘edible’'],
+  ['agentive','Spanish','hablar','V',[['habla','stem'],['-dor','aff']],'A','‘talk’ → ‘talkative’'],
+  ['relational','English','government','N',[['government','stem'],['-al','aff']],'A','related to the noun'],
+  ['privative','Russian','voda','N',[['bez-','aff'],['vod','stem'],['-nyj','aff']],'A','‘water’ → ‘waterless’'],
+  ['material','German','Kupfer','N',[['kupfer','stem'],['-n','aff']],'A','‘copper’ → ‘made of copper’'],
+  ['attenuative','Tzutujil','kaq','A',[['kaq','stem'],['-koj','aff']],'A','‘red’ → ‘reddish’'],
+  ['intensive','Turkish','yeni','A',[['yep-','copy'],['yeni','stem']],'A','‘new’ → ‘brand new’'],
+  ['negative','German','schön','A',[['un-','aff'],['schön','stem']],'A','‘beautiful’ → ‘ugly’']]};
+const CLS={V:'verb',N:'noun',A:'adjective'},TERM={V:'deverbal',N:'denominal',A:'deadjectival'};
+function derivWidget(box){
+  const tabs=el('div','tabs'),chips=el('div','chips'),host=el('div','stage'),res=el('div','res','Choose a derived class, then a meaning.');
+  box.append(tabs,chips,host,res);const st=new Stage(host);let tm=null,cur='Nouns';
+  const tb={};Object.keys(DER).forEach(k=>{const b=el('button','chip'+(k===cur?' on':''),k);b.onclick=()=>{cur=k;fill();};tabs.append(b);tb[k]=b;});
+  function fill(){Object.keys(tb).forEach(k=>tb[k].classList.toggle('on',k===cur));chips.innerHTML='';
+    DER[cur].forEach(d=>{const c=el('button','chip',d[0]+' · '+d[1]);c.onclick=()=>pick(d,c);chips.append(c);});}
+  function pick(d,c){clearTimeout(tm);[...chips.children].forEach(x=>x.classList.remove('on'));c.classList.add('on','done');
+    const [m,l,base,fc,parts,tc,g]=d;
+    st.set(S(R([tl('b',base,'stem',base.length*.58+1,{sub:fc})],'base: '+CLS[fc])));
+    tm=setTimeout(()=>{st.set(S(R([tl('b',base,'stem',base.length*.58+1,{sub:fc})],'base: '+CLS[fc]),
+      R(parts.map((p,i)=>tl('d'+i,p[0],p[1],p[0].length*.58+1,{from:'b',...(i===(parts.findIndex(q=>q[1]==='stem'))?{sub:tc}:{})})),'derived: '+CLS[tc]+' ('+m+')')));},800);
+    res.className='res good';res.innerHTML=`<b>${m}</b> · ${l}<br>${g}<br><small>${TERM[fc]} (${fc} → ${tc})</small>`;}
+  fill();
+}
+
+/* ---------- Eleven criteria ---------- */
+const CRIT=[
+ ['Syntax','Inflection is relevant to the syntax; derivation is not.',
+  S(R([tl('n','nie','plain',1.6),tl('c','czytał','stem',2.8),tl('g','gazet','stem',2.4),tl('y','-y','aff',1.2)],'negated: object in the genitive'),R([tl('c2','czytał','stem',2.8),tl('g2','gazet','stem',2.4),tl('e','-ę','aff',1.2)],'not negated: object in the accusative')),
+  'Case is syntactically relevant in Polish (government). Agreement works the same way: in <i>the boy walks</i> and <i>the girls walk</i> the verb must match its subject. Tense and aspect are not obviously syntax-relevant, so for them the criterion is read slightly more loosely.'],
+ ['Obligatory','Inflectional features must be expressed on every applicable word-form.',
+  S(R([tl('a1','insul','stem',2.4),tl('a2','-ae','aff',1.6)],'Latin: case and number cannot be left out'),R([tl('b1','drink','stem',2.4),tl('b2','-er','aff',1.6)],'English -er: an agent meaning is optional')),
+  'Obligatory does not mean overt. Spanish <i>camina</i> ‘s/he walks’ has no affix, but it is an inflected form with zero expression, not an uninflected one.'],
+ ['Limits','Inflection applies without arbitrary limits; derivation may have arbitrary gaps.',
+  S(R([tl('c1','authoress','ok',4.4)],'English -ess: exists'),R([tl('c2','*professoress','bad',5.8)],'makes perfect sense, yet not a word'),R([tl('c3','*presidentess','bad',6)],'')),
+  'Gaps in inflection usually have a semantic reason (*She is knowing me, *informations, *deader). Derivational gaps like these are arbitrary. Spanish -ear gives <i>verdear</i> ‘become green’ but not *carear ‘become expensive’.'],
+ ['Concept','Canonical inflected forms express the same concept as the base.',
+  S(R([tl('b1','brother','lex',3),tl('b2','⇄','op',1),tl('b3','brethren','lex',3)],'once, the plural of brother…'),R([tl('c1','brother','lex',3),tl('c2','→','op',1),tl('c3','brothers','lex',3)],'…brethren split off; a new plural was needed')),
+  'Not always clear-cut. Number can split into two lexemes (brother, brethren), and on the other side, is <i>kindness</i> really a different concept from <i>kind</i>?'],
+ ['Abstract','Inflection is relatively abstract; derivation is relatively concrete.',
+  S(R([tl('p1','pomm','stem',2.2),tl('p2','-ier','aff',1.8)],'French: a kind of tree (concrete)'),R([tl('q1','child','stem',2.2),tl('q2','-hood','aff',2.2)],'English: ‘status’ (abstract)')),
+  'Because -hood is about as abstract as inflection, it is neither canonically derivational nor canonically inflectional.'],
+ ['Compositional','Inflection has compositional meaning; derivation may not.',
+  S(R([tl('r1','dnev','stem',2.2),tl('r2','-nik','aff',1.8)],'Russian ‘diary’: also ‘notebook’, ‘for writing’'),R([tl('s1','König','stem',2.4),tl('s2','-in','aff',1.6)],'German ‘queen’: fully predictable')),
+  'German -in is derivational by most criteria, yet its meaning is as regular as inflection. Ignorance and reparation drifted even further from ignore and repair.'],
+ ['Position','Inflection sits at the edge of the word; derivation sits close to the root.',
+  S(R([tl('t1','king','stem',2.2),tl('t2','-dom','aff',1.8,{sub:'D'}),tl('t3','-s','aff',1.2,{sub:'I'})],'root, derivation, inflection'),R([tl('u1','ver-','aff',1.4,{sub:'D'}),tl('u2','schön','stem',2.4),tl('u3','-er','aff',1.4,{sub:'I'}),tl('u4','-n','aff',1.2,{sub:'D'})],'German exception: inflection inside derivation')),
+  'A relative property: derivation almost always sits between root and inflection (real-ize-d, luck-i-er), but there are exceptions, and English allows plurals inside compounds (publications list).'],
+ ['Allomorphy','Inflection induces less base allomorphy; derivation induces more.',
+  S(R([tl('v1','destroy','stem',3),tl('v2','-ed','aff',1.4)],'inflected: base unchanged'),R([tl('w1','destruc','mod',3),tl('w2','-tion','aff',1.8)],'derived: base changes')),
+  'Relative again, and it can reverse: in Serbian junak gives junac-i ‘heroes’ (base changes) but junak-inja ‘heroine’ (base intact).'],
+ ['Word class','Inflection does not change word class; derivation sometimes does.',
+  S(R([tl('x1','otkryt-oe','stem',3.6),tl('x2','okno','stem',2.2)],'adjective agrees with ‘window’'),R([tl('y1','*otkryt-oe','bad',3.8),tl('y2','okon-naja','stem',3.6),tl('y3','rama','stem',2)],'cannot agree through the derived adjective')),
+  'In Upper Sorbian, -ow changes word class (muž → mužowa) yet the base noun still controls agreement, the meaning is compositional and it is productive. So a class-changing affix can have inflectional traits.'],
+ ['Cumulative','Inflection can be expressed cumulatively; derivation rarely is.',
+  S(R([tl('z1','insul','stem',2.4),tl('z2','-ārum','aff',2.2)],'one suffix = genitive + plural'),R([tl('d1','-ster','aff',2.2),tl('d2','=','op',.6),tl('d3','agent + female','plain',5)],'Dutch: a possible derivational case')),
+  'This only applies to a small subset of cases, but it is a telling one.'],
+ ['Iteration','Inflection cannot be iterated; derivation sometimes can.',
+  S(R([tl('i1','wañu','stem',2.2),tl('i2','-chi','aff',1.6),tl('i3','-chi','aff',1.6,{enter:'right'})],'Huallaga Quechua: ‘cause to kill’'),R([tl('j1','*cat','bad',1.8),tl('j2','-s','bad',1),tl('j3','-es','bad',1.4)],'double plural: virtually unattested')),
+  'Afrikaans kind-jie-tjie ‘a little little child’ and English post-post-modern iterate too. Only patterns where repeating would make sense can iterate at all.']];
+function critWidget(box){
+  const chips=el('div','chips'),host=el('div','stage'),rule=el('div','res'),note=el('p','hint');
+  box.append(chips,host,rule,note);const st=new Stage(host);
+  CRIT.forEach((c,i)=>{const b=el('button','chip',`(${['i','ii','iii','iv','v','vi','vii','viii','ix','x','xi'][i]}) ${c[0]}`);
+    b.onclick=()=>{[...chips.children].forEach(x=>x.classList.remove('on'));b.classList.add('on','done');st.set(c[2]);rule.className='res';rule.innerHTML=`<b>${c[1]}</b>`;note.innerHTML=c[3];};chips.append(b);});
+  chips.children[0].click();
+}
+
+/* ---------- Continuum table (Table 5.6) ---------- */
+function contWidget(box){
+  const COLS=[['cum','Cumulative'],['obl','Obligatory'],['new','New concept'],['unl','Unlimited'],['cm','Compositional']];
+  const ROWS=[['3rd singular','walk/walks','IIIII'],['noun plural','song/songs','DIIII'],['Spanish diminutive','gato/gatito','DDIII'],['English repetitive','write/rewrite','DDDII'],['English female noun','poet/poetess','DDDDI'],['English action noun','resent/resentment','DDDDD']];
+  const on=new Set(COLS.map(c=>c[0]));
+  const chips=el('div','chips'),tb=el('div'),res=el('div','res');
+  const presets=el('div','chips');
+  const pa=el('button','chip on','All five criteria'),pb=el('button','chip','Only obligatory + unlimited');presets.append(pa,pb);
+  box.append(el('p','gl','Which criteria count?'),presets,chips,tb,res);
+  const cb={};COLS.forEach(([k,n])=>{const b=el('button','chip on',n);b.onclick=()=>{on.has(k)?on.delete(k):on.add(k);pa.classList.remove('on');pb.classList.remove('on');draw();};chips.append(b);cb[k]=b;});
+  pa.onclick=()=>{COLS.forEach(c=>on.add(c[0]));pa.classList.add('on');pb.classList.remove('on');draw();};
+  pb.onclick=()=>{on.clear();on.add('obl');on.add('unl');pb.classList.add('on');pa.classList.remove('on');draw();};
+  function draw(){
+    COLS.forEach(([k])=>cb[k].classList.toggle('on',on.has(k)));
+    const t=el('table','tb');t.innerHTML='<tr><th>pattern</th>'+COLS.map(c=>`<th style="text-align:center;opacity:${on.has(c[0])?1:.35}">${c[1].slice(0,4)}.</th>`).join('')+'</tr>';
+    ROWS.forEach(([n,ex,v])=>{const sel=[...v].filter((x,i)=>on.has(COLS[i][0]));const ni=sel.filter(x=>x==='I').length;
+      const verdict=!sel.length?'–':ni===sel.length?'canonical inflection':ni===0?'canonical derivation':'in between';
+      t.append(Object.assign(el('tr','row'),{innerHTML:`<td>${n}<br><small>${ex}</small><br><b style="font:700 12px var(--ui);color:var(--stem)">${verdict}</b></td>`+[...v].map((x,i)=>`<td style="text-align:center;opacity:${on.has(COLS[i][0])?1:.3}"><span class="pill" style="background:${x==='I'?'var(--stem)':'var(--aff)'};color:${x==='I'?'#fff':'var(--aff-ink)'}">${x}</span></td>`).join('')}));});
+    tb.innerHTML='';tb.append(t);
+    res.innerHTML='<b>I</b> = value typical of inflection, <b>D</b> = typical of derivation (Table 5.6). The verdict column is this lesson’s label. Count every criterion and you get a staircase of in-between cases; count only two and the picture still is not clean.';
+  }
+  draw();
+}
+
+/* ---------- Two-criteria diagnosis (Tables 5.7 and 5.8) ---------- */
+function diagWidget(box){
+  const D={'English plurals':[['-s','cat/cats','I','I'],['-s','house/houses','I','D'],['-es','index/indices','I','D'],['vowel change','goose/geese','I','?'],['-us → -i','alumnus/alumni','I','I'],['no change','sheep/sheep','I','I'],['-en','ox/oxen','I','I']],
+   'English action nouns':[['-ance','resist/resistance','D','I'],['-ance','maintain/maintenance','D','D'],['-al','deny/denial','D','I'],['-age','cover/coverage','D','I'],['-ion','destroy/destruction','D','D'],['-ment','endorse/endorsement','D','I'],['-y','assemble/assembly','D','I'],['no change','walk/walk','D','D']]};
+  const tabs=el('div','tabs'),chips=el('div','chips'),host=el('div','stage'),res=el('div','res','Pick a pattern.');box.append(tabs,chips,host,res);
+  const st=new Stage(host);let cur='English plurals';const tb={};
+  Object.keys(D).forEach(k=>{const b=el('button','chip'+(k===cur?' on':''),k);b.onclick=()=>{cur=k;fill();};tabs.append(b);tb[k]=b;});
+  const KIND={I:'stem',D:'aff','?':'ghost'};
+  function fill(){Object.keys(tb).forEach(k=>tb[k].classList.toggle('on',k===cur));chips.innerHTML='';
+    D[cur].forEach(([p,ex,o,a])=>{const c=el('button','chip',ex);c.onclick=()=>{[...chips.children].forEach(x=>x.classList.remove('on'));c.classList.add('on','done');
+      st.set(S(R([tl('o','obligatory: '+o,KIND[o],5.4)],'criterion 1'),R([tl('a','base allomorphy: '+a,KIND[a],6.4)],'criterion 2')));
+      const v=o==='?'||a==='?'?'The second criterion cannot be applied to a pattern of base modification, so only one criterion speaks.':
+        o===a?`Both criteria point to ${o==='I'?'inflection':'derivation'}.`:'The two criteria disagree. With only two you cannot break the tie; the exercise uses a “majority wins” rule across all eleven.';
+      res.className='res';res.innerHTML=`<span class="w">${ex}</span> (${p})<br>${v}`;};chips.append(c);});}
+  fill();
+}
+
+/* ---------- “nicely” verdict builder ---------- */
+function verdictWidget(box){
+  const H=['Does any syntactic rule need to see -ly?','Must every adjective have an -ly form?','Does -ly attach to adjectives without arbitrary gaps?','Does nicely express the same concept as nice?','Is the meaning abstract or concrete?','Is the meaning always predictable?','Is -ly at the edge of the word or close to the root?','Does -ly change the base?','Does -ly change the word class?','Is -ly cumulative with another meaning?','Can -ly be repeated?'];
+  const state=H.map(()=>0);const list=el('div'),res=el('div','res');box.append(list,res);
+  const L=['Inflection','Unsure','Derivation'];
+  H.forEach((h,i)=>{const row=el('div');row.append(el('p','gl',`(${['i','ii','iii','iv','v','vi','vii','viii','ix','x','xi'][i]}) ${h}`));const ch=el('div','chips');
+    L.forEach((l,j)=>{const b=el('button','chip'+(j===1?' on':''),l);b.onclick=()=>{state[i]=j-1;[...ch.children].forEach((c,k)=>c.classList.toggle('on',k===j));draw();};ch.append(b);});row.append(ch);list.append(row);});
+  function draw(){const I=state.filter(x=>x===-1).length,D=state.filter(x=>x===1).length,U=11-I-D;
+    res.innerHTML=`<b>Inflection ${I} · Derivation ${D} · Unsure ${U}</b><br>`+(I===D?'A tie so far.':I>D?'Majority so far: inflectional.':'Majority so far: derivational.')+
+      '<br><small>The book does not give an answer: it asks you to apply the criteria and form your own opinion. Some criteria may not point the same way, which is the heart of the dichotomy vs continuum debate.</small>';}
+  draw();
+}
+
+/* ---------- Summary ---------- */
+function summaryWidget(box){
+  box.append(el('ul','pts',`
+   <li><b>Inflection</b> is described with <b>values grouped into features</b> (number, case, gender, person, tense, aspect, mood). <b>Derivation</b> is described with individual patterns and meanings, and often changes word class.</li>
+   <li>Eleven properties distinguish them, from syntactic relevance and obligatoriness to iteration, but most are tendencies, not absolutes.</li>
+   <li><b>Dichotomy:</b> stress syntax relevance, obligatoriness and limits. <b>Continuum:</b> weigh all eleven; canonical inflection and derivation are end-points.</li>
+   <li>Inflection splits into <b>inherent</b> (derivation-like) and <b>contextual</b> (agreement and government).</li>
+   <li><b>Architecture:</b> the dichotomy fits split morphology (word-formation before syntax, inflection after), but several facts argue against it; the continuum fits a single component.</li>`));
+  let tot=0,good=0;const rows=[];
+  SECTIONS.forEach(s=>{let n=0,g=0;s.steps.forEach(st=>{if(st.type==='quiz')st.qs.forEach(q=>{n++;if(app.score[q.id])g++;});});
+    if(n){tot+=n;good+=g;rows.push(`<li>${s.title}: <b>${g}/${n}</b></li>`);}});
+  box.append(el('p','res',`<b>Quiz results (first try): ${good} of ${tot}</b><ul class="pts">${rows.join('')}</ul>`));
+}
+
+/* ---------- Quiz bank ---------- */
+const mq=(id,q,right,wrongs,w)=>({id,q,o:[right,...wrongs],a:0,w});
+const Q={
+ i1:mq('i1','Why do linguists say “inflectional values” but just “derivational meanings”?','Inflectional values often have only a syntactic function and no clear meaning of their own (walks vs walk)',['Derivation has no meaning','Inflection is always concrete','The terms are interchangeable'],'Walks differs from walk by agreeing with a third-person singular subject, which many linguists hesitate to call a difference of meaning.'),
+ v1:mq('v1','Two values belong to the same inflectional feature when…','They share a semantic or functional property and are mutually exclusive',['They are expressed by the same affix','They always occur together','They are both obligatory'],'Present and past both locate an event in time and cannot occur together on one verb: values of the feature tense.'),
+ v2:mq('v2','Why do case and number combine freely, while tense, aspect and mood often do not?','A noun’s syntactic role is independent of whether it is one or many, but some tense/aspect/mood combinations are semantically odd',['Case is always expressed by zero','Number is not an inflectional feature','Languages avoid mood'],'Perfective aspect does not sit well with present tense, and the imperative does not combine with the past.'),
+ v3:mq('v3','Swahili has forms for only 7 of the possible tense/aspect/mood combinations. A simple analysis is…','One feature, tense/aspect/mood, with seven values',['Three features with every combination','No inflection at all','Seven separate features'],'No forms exist for most combinations, so a single feature with seven values loses no generalization.'),
+ e1:mq('e1','Spanish gato → gatito ‘little cat’ is a…','Diminutive noun (N → N)',['Status noun','Agent noun','Quality noun'],'A denominal noun meaning ‘small X’.'),
+ e2:mq('e2','Deverbal means…','Derived from a verb',['Derived from a noun','Derived from an adjective','Having no base'],'Denominal is from a noun, deadjectival from an adjective.'),
+ e3:mq('e3','Why do languages typically have more ways of deriving nouns than verbs or adjectives?','New words for new concepts are a chief job of derivation, and we need names for many nominal concepts',['Verbs cannot be derived','Nouns are shorter','Adjectives are inflectional'],'This is the book’s explanation (after Bauer 2002).'),
+ k1:mq('k1','Polish puts a negated verb’s object in the genitive, otherwise the accusative. Which criterion does this illustrate?','Relevance to the syntax (government)',['Obligatoriness','Iteration','Cumulative expression'],'The presence of negation changes the case required on the object, so case must be relevant to the syntax.'),
+ k2:mq('k2','Italian il poeta, la casa, la mano, il fiume. What does this show about -a and -o?','They do not generally mean feminine and masculine; gender is marked only on the determiners and adjectives',['-a always means feminine','Italian has no gender','Gender is marked only on nouns'],'Gender can be marked on the target alone, with the controller noun carrying no overt gender marking.'),
+ k3:mq('k3','English has authoress but not *professoress, though it would make sense. This illustrates…','Arbitrary limits on derivational application',['Obligatory expression','Compositional meaning','Cumulative expression'],'Inflectional gaps usually have a semantic explanation; derivational gaps often do not.'),
+ k4:mq('k4','Which pair shows the base allomorphy typical of derivation?','destroy → destruc-tion (but destroy-ed)',['destroy → destroy-ed','cat → cats','walk → walks'],'Derivation tends to induce more base allomorphy, though this is only a tendency.'),
+ k5:mq('k5','Huallaga Quechua wañu-chi-chi- ‘cause to kill’ shows that…','Some derivation can be iterated, while inflection cannot',['Inflection can be iterated','All derivation is iterable','Causatives are inflectional'],'Iteration is possible only where it makes semantic sense, and then mostly in derivation.'),
+ t1:mq('t1','Proponents of the dichotomy approach mainly emphasize…','Relevance to the syntax, obligatoriness and limitations on application',['Cumulative expression and iteration','Abstractness and position','All eleven criteria equally'],'They treat the first three properties as the most important, especially syntax relevance.'),
+ t2:mq('t2','On the continuum view, the best conclusion is that…','Canonical inflection and canonical derivation are end-points, with many intermediate types between them',['Inflection and derivation are identical','Only derivation exists','Only three criteria matter'],'Different criteria point different ways, but in an orderly pattern.'),
+ t3:mq('t3','Number is inherent on nouns. On verbs and adjectives it is…','Contextual: assigned by agreement with the noun',['Derivational','Absent','Also inherent'],'The same feature can be inherent for one word class and contextual for another.'),
+ t4:mq('t4','Dutch ouder means ‘older’ (comparative) but also ‘parent’. What does this show?','Inherent inflection can have idiosyncratic meaning, like derivation',['Contextual inflection is unpredictable','Comparatives are derivational in all languages','Meaning is always compositional in inflection'],'Idiosyncrasy appears in inherent inflection, not in contextual inflection such as verb agreement.'),
+ a1:mq('a1','In split morphology, word-formation applies…','Before syntax, while inflection applies after syntax',['After syntax, while inflection applies before','At the same time as phonology','Only in compounds'],'Word-formation is pre-syntactic, inflection is post-syntactic.'),
+ a2:mq('a2','Why does split morphology rule out *king-s-dom and *trees plantation?','Inflected forms like kings cannot be the input to word-formation',['English has no plurals','-dom is a prefix','Compounds cannot be built'],'Word-formation applies in the lexicon, before inflection exists.'),
+ a3:mq('a3','Which fact is a problem for split morphology?','German ver-schön-er-n: inflectional -er sits inside derivational -n',['kingdoms','The word insane','Latin has five cases'],'It also struggles with inherent inflection behaving like derivation, and with Latin endings that mark inherent number and contextual case together.'),
+ a4:mq('a4','A possible system-external explanation for affix order (Hay and Plag 2004) is that…','Affixes more likely to be decomposed occur outside those less likely to be decomposed',['Inflection is always outside','Syntax assigns affix order','Speakers memorize affix orders as rules'],'This ties back to chapter 4’s two routes of lexical access.'),
+ f1:mq('f1','Spanish caminabas (see Figure 5.8). Which feature-value notation fits?','tense: past · person: 2nd · number: singular',['tense: present · person: 2nd · number: singular','tense: past · person: 3rd · number: singular','tense: past · person: 2nd · number: plural'],'camina-ba-s: past tense, second person singular.'),
+ f2:mq('f2','Latin insulam (see Figure 5.1)','case: accusative · number: singular',['case: nominative · number: singular','case: accusative · number: plural','case: genitive · number: singular'],'-am is the accusative singular ending.'),
+ f3:mq('f3','Latin cantabit (see Figure 5.2), five features','mood: indicative · aspect: infectum · tense: future · person: 3rd · number: singular',['mood: indicative · aspect: infectum · tense: past · person: 3rd · number: singular','mood: subjunctive · aspect: infectum · tense: future · person: 3rd · number: singular','mood: indicative · aspect: perfectum · tense: future · person: 3rd · number: singular'],'canta-bi-t is the future indicative infectum, third person singular.'),
+ f4:mq('f4','English books','number: plural',['number: singular','case: genitive','person: 3rd'],'One feature, one value.'),
+ f5:mq('f5','Serbian ovci (see (4.3))','case: dative · number: singular',['case: dative · number: plural','case: nominative · number: plural','case: genitive · number: singular'],'ovc-i is the dative singular in the paradigm of ovca.'),
+ f6:mq('f6','English bigger','degree: comparative',['degree: superlative','tense: past','number: plural'],'Comparative and superlative degree are values of a degree feature.')
+};
+const SECTIONS=[
+{title:'Inflection or derivation?',steps:[
+ {type:'stage',cap:`Is the <b>-ly</b> in nicely a derivational suffix, making a new lexeme, or an inflectional suffix, giving a form of nice? Chapter 5 gives the tools to argue it.`,
+  spec:S(R([tl('n','nice','stem',2.6),tl('l','-ly','aff',1.6,{enter:'right'})],'nicely: inflection or derivation?'))},
+ {type:'stage',cap:`The two are described in different vocabularies. For inflection we say <b>inflectional values</b>: walks is ‘present’, walked is ‘past’. For derivation we just say <b>derivational meaning</b>: walker is an ‘agent noun’.`,
+  spec:S(R([tl('a1','walk','stem',2.2),tl('a2','-s','aff',1.2)],'inflectional value: present'),R([tl('b1','walk','stem',2.2),tl('b2','-ed','aff',1.6)],'inflectional value: past'),R([tl('c1','walk','stem',2.2),tl('c2','-er','aff',1.6)],'derivational meaning: agent noun'))},
+ {type:'quiz',cap:'Quick check.',qs:[Q.i1]}
+]},
+{title:'Inflectional values',steps:[
+ {type:'stage',cap:`Values group into <b>features</b>. Present and past share a semantic property (time relative to speaking) and are mutually exclusive, so both are values of the feature <b>tense</b>. Most values across languages fall under number, case, gender, person, tense, aspect and mood.`,
+  spec:S(R([tl('f','tense','var',2.6)],'feature'),R([tl('p','present','stem',3),tl('q','past','stem',2.2)],'values'))},
+ {type:'widget',cap:`Case and number combine freely. Latin <i>insula</i> ‘island’ has ten cells. Pick a case and a number, and note where one form fills several cells.`,build:latinCase},
+ {type:'widget',cap:`Tense, aspect and mood are different. Try the Latin third-person singular grid and look for the gap.`,build:latinTAM},
+ {type:'stage',cap:`Swahili goes further: only <b>7</b> combinations have forms at all. So many linguists posit a single feature, <b>tense/aspect/mood</b>, with seven values.`,
+  spec:S(R([tl('a1','normal present','stem',4.2),tl('a2','normal past','stem',3.8)],'indicative'),R([tl('b1','normal future','stem',4.2),tl('b2','progressive present','stem',5.2)],''),R([tl('c1','perfect present','stem',4.2),tl('c2','hypothetical present','stem',5.4)],''),R([tl('d1','hypothetical past','stem',4.8)],'7 forms of 18 possible combinations'))},
+ {type:'stage',cap:`The reason is semantic. Any case goes with any number. But perfective (seen as a whole) clashes with present (still in the middle), and a command cannot be in the past.`,
+  spec:S(R([tl('c1','nominative','ok',3.4),tl('c2','+','op',.6),tl('c3','plural','ok',2.4)],'free combination'),R([tl('d1','perfective','bad',3.4),tl('d2','+','op',.6),tl('d3','present','bad',2.8)],'odd combination'),R([tl('e1','imperative','bad',3.4),tl('e2','+','op',.6),tl('e3','past','bad',2.2)],'odd combination'))},
+ {type:'stage',cap:`Other values are less universal: degree (big, bigger, biggest, common in Europe), voice (Swedish passive kasta-s), polarity (Japanese negative). And <b>dependent verb forms</b>: participles, converbs and infinitives.`,
+  spec:S(R([tl('a1','big','stem',1.8),tl('a2','-er','aff',1.4),tl('a3','-est','aff',1.8)],'degree'),R([tl('b1','kasta','stem',2.6),tl('b2','-s','aff',1.2)],'Swedish passive: ‘be thrown’'),R([tl('c1','kir','stem',1.8),tl('c2','-ana','aff',2),tl('c3','-i','aff',1)],'Japanese negative: ‘doesn’t cut’'))},
+ {type:'quiz',cap:'Check yourself.',qs:[Q.v1,Q.v2,Q.v3]}
+]},
+{title:'Derivational meanings',steps:[
+ {type:'stage',cap:`Derivational meanings are far more diverse. Some are widespread (agent noun, quality noun), others are extremely specific: Big Nambas has a suffix for ‘sacred’ terms, French one for fruit trees.`,
+  spec:S(R([tl('a1','dui','stem',1.8),tl('a2','-et','aff',1.4)],'Big Nambas: ‘man’ → ‘sacred man’'),R([tl('b1','pomm','stem',2.2),tl('b2','-ier','aff',1.8)],'French: ‘apple’ → ‘apple tree’'))},
+ {type:'widget',cap:`Explore the book’s tables of common derivational meanings. Nouns are derived most often, then verbs, then adjectives.`,build:derivWidget},
+ {type:'stage',cap:`Derivation often <b>changes word class</b>. We name the pattern by the base: <b>deverbal</b> (from a verb), <b>denominal</b> (from a noun), <b>deadjectival</b> (from an adjective).`,
+  spec:S(R([tl('a1','drink','stem',2.4,{sub:'V'}),tl('a2','-er','aff',1.4,{sub:'N'})],'deverbal'),R([tl('b1','government','stem',4.4,{sub:'N'}),tl('b2','-al','aff',1.4,{sub:'A'})],'denominal'),R([tl('c1','kind','stem',2.2,{sub:'A'}),tl('c2','-ness','aff',2,{sub:'N'})],'deadjectival'))},
+ {type:'quiz',cap:'Check yourself.',qs:[Q.e1,Q.e2,Q.e3]}
+]},
+{title:'Eleven properties',steps:[
+ {type:'stage',cap:`The goal of section 5.3: do inflection and derivation have different enough traits to be two systems? The <b>dichotomy</b> approach says yes. The <b>continuum</b> approach says they are end-points of a scale.`,
+  spec:S(R([tl('a','dichotomy: two subsystems','stem',8)],''),R([tl('b','continuum: end-points of a scale','aff',8)],''))},
+ {type:'widget',cap:`Eleven criteria. Tap each to see the rule, an example, and its caveat. Most are tendencies, not absolutes.`,build:critWidget},
+ {type:'quiz',cap:'Check yourself.',qs:[Q.k1,Q.k2,Q.k3,Q.k4,Q.k5]}
+]},
+{title:'Dichotomy or continuum?',steps:[
+ {type:'stage',cap:`There is less disagreement about the facts than about which ones matter. Dichotomy proponents lean on the first three criteria, especially syntactic relevance. Continuum proponents consider all eleven together, and the criteria do not always agree.`,
+  spec:S(R([tl('a1','syntax','stem',2.4),tl('a2','obligatory','stem',3),tl('a3','limits','stem',2.2)],'dichotomy leans on these three'),R([tl('b','all eleven, weighed together','aff',8.4)],'continuum'))},
+ {type:'widget',cap:`Table 5.6, with a twist: choose which criteria count. Every criterion counted makes a staircase. Even with only two, the in-between cases do not vanish.`,build:contWidget},
+ {type:'stage',cap:`A popular compromise splits inflection in two. <b>Inherent</b> inflection adds independent information: noun number, tense, aspect, and cases like the locative. Here are three inherent cases.`,
+  spec:S(R([tl('a1','ev','stem',1.6),tl('a2','-de','aff',1.4)],'Turkish locative: ‘in the house’'),R([tl('b1','mayu','stem',2.2),tl('b2','-pita','aff',2)],'Quechua ablative: ‘from the river’'),R([tl('c1','nož','stem',1.8),tl('c2','-om','aff',1.4)],'Russian instrumental: ‘with a knife’'))},
+ {type:'widget',cap:`<b>Contextual</b> inflection is assigned by syntax: structural cases and agreement. Number is inherent on a noun but contextual on a verb or adjective. Sort these.`,
+  build:b=>sort3Widget(b,[['number on a noun','inherent','It is dictated by the referent: one thing or several.'],['number on a verb or adjective','contextual','It is copied from the noun by agreement.'],['tense on a verb','inherent','Tense and aspect carry independent information.'],
+   ['nominative case','contextual','A structural case, required by syntax.'],['accusative case','contextual','A structural case, required by government.'],['Turkish locative ev-de ‘in the house’','inherent','It makes its own semantic contribution.'],['Russian instrumental nož-om ‘with a knife’','inherent','It makes its own semantic contribution, mostly not syntactically determined.']],
+   {inherent:'Inherent',contextual:'Contextual'})},
+ {type:'stage',cap:`Inherent inflection also acts like derivation in other ways. First, odd meanings: Dutch <b>ouder</b> is the comparative ‘older’ but also ‘parent’.`,
+  spec:S(R([tl('a1','ouder','lex',3),tl('a2','=','op',.8),tl('a3','‘older’','plain',3)],'comparative, compositional'),R([tl('b1','ouder','lex',3),tl('b2','=','op',.8),tl('b3','‘parent’','plain',3)],'comparative, idiosyncratic'))},
+ {type:'stage',cap:`Second, base allomorphy. Contextual inflection leaves the base alone: sing → sings.`,
+  spec:S(R([...T('sing','s'),tl('x','-s','aff',1.2)],'agreement (contextual): base intact'))},
+ {type:'stage',cap:`Inherent inflection can change it: sing → <b>sang</b> (past tense). Inherent inflection is also closer to the root. So the three-way split inflection (contextual) / inflection (inherent) / derivation fits many facts.`,
+  spec:S(R(chg(T('sing','s'),{1:'a'}),'past tense (inherent): the base changes'))},
+ {type:'quiz',cap:'Check yourself.',qs:[Q.t1,Q.t2,Q.t3,Q.t4]}
+]},
+{title:'Morphology and syntax',steps:[
+ {type:'stage',cap:`The debate shapes grammar architecture. <b>Split morphology</b>: word-formation happens in the lexicon <i>before</i> syntax, and inflection <i>after</i>. Take Latin <i>Imperator salutavit populum</i>. First, simple lexemes.`,
+  spec:S(R([tl('l1','imperare','lex',3.2),tl('l2','salus','lex',2.2),tl('l3','populus','lex',3)],'lexicon: simple lexemes'))},
+ {type:'stage',cap:`Word-formation builds complex lexemes: imperator ‘commander’ and salutare ‘greet’.`,
+  spec:S(R([tl('l1','imperare','lex',3.2),tl('l2','salus','lex',2.2),tl('l3','populus','lex',3)],'lexicon: simple lexemes'),R([tl('w1','imperator','var',3.4,{from:'l1'}),tl('w2','salutare','var',3.2,{from:'l2'})],'word-formation: complex lexemes'))},
+ {type:'stage',cap:`Syntax puts lexemes in position and assigns features: the subject is nominative singular third person, which the verb must agree with.`,
+  spec:S(R([tl('s1','imperator','lex',3.4,{from:'w1',sub:'nom.sg.3'}),tl('s2','salutare','lex',3.2,{from:'w2',sub:'sg.3.prf'}),tl('s3','populus','lex',3,{from:'l3',sub:'acc.sg'})],'syntax: lexemes + features'))},
+ {type:'stage',cap:`Only now do inflection rules spell out the word-forms: <b>imperator salutavit populum</b>.`,
+  spec:S(R([tl('o1','imperator','stem',3.4,{from:'s1'}),tl('o2','salutavit','aff',3.2,{from:'s2'}),tl('o3','populum','stem',3,{from:'s3'})],'inflection spells out the forms'))},
+ {type:'stage',cap:`A selling point: it predicts derivation sits <b>inside</b> inflection. Kingdom is built first, then -s.`,
+  spec:S(R([tl('k','king','stem',2.2),tl('d','-dom','aff',1.8),tl('s','-s','aff',1.2)],'king-dom-s',[{id:'g',from:0,to:1,label:'built in the lexicon'}]))},
+ {type:'stage',cap:`And it rules out inflection inside derivation or compounds, because inflected forms cannot feed word-formation.`,
+  spec:S(R([tl('k','*king','bad',2.2),tl('s','-s','bad',1.2),tl('d','-dom','bad',1.8)],'*king-s-dom'),R([tl('t','*trees plantation','bad',6.6)],'the correct form is tree plantation'))},
+ {type:'stage',cap:`But there are problems. German <b>ver-schön-er-n</b> ‘make more beautiful’ has inflectional -er inside derivational -n. Inherent inflection acts like derivation. And Latin endings mark inherent number and contextual case together.`,
+  spec:S(R([tl('u1','ver-','aff',1.4,{sub:'D'}),tl('u2','schön','stem',2.4),tl('u3','-er','aff',1.4,{sub:'I'}),tl('u4','-n','aff',1.2,{sub:'D'})],'inflection inside derivation'))},
+ {type:'stage',cap:`The continuum view fits a <b>single component</b>: syntax produces morphosyntactic representations, and one morphological component inserts word-forms matching them.`,
+  spec:S(R([tl('a1','lexicon','lex',2.4),tl('a2','→','op',.6),tl('a3','syntax','plain',2.2),tl('a4','→','op',.6),tl('a5','inflection','aff',2.8)],'split: word-formation, syntax, inflection'),
+         R([tl('b1','syntax','plain',2.2),tl('b2','→','op',.6),tl('b3','morphology','stem',3.2),tl('b4','→','op',.6),tl('b5','phonology','plain',2.8)],'single component: word-formation + inflection together'))},
+ {type:'stage',cap:`It cannot explain why derivation sits inside inflection, but that is not the only ordering fact. Spanish diminutives go outside other derivation, and case follows number. These may have <b>processing</b> explanations (Hay and Plag): affixes more often decomposed sit outside those less often decomposed.`,
+  spec:S(R([tl('a1','baron','stem',2.4),tl('a2','-es','aff',1.4),tl('a3','-ita','aff',1.8)],'Spanish: little baroness'),R([tl('b1','ev','stem',1.4),tl('b2','-ler','aff',1.6),tl('b3','-in','aff',1.4)],'Turkish: number, then case'),R([tl('c1','*evinler','bad',3.2)],'not formed'))},
+ {type:'quiz',cap:'Check yourself.',qs:[Q.a1,Q.a2,Q.a3,Q.a4]}
+]},
+{title:'Exercises',steps:[
+ {type:'quiz',cap:`Exercise 1: give the inflectional information in feature-value notation.`,qs:[Q.f1,Q.f2,Q.f3,Q.f4,Q.f5,Q.f6]},
+ {type:'widget',cap:`Exercise 2: the Lezgian verb paradigm for <i>kat-</i> ‘run’. Build any cell, then show all twelve.`,build:lezgianWidget},
+ {type:'widget',cap:`The exploratory exercise, in miniature: diagnose patterns using just two criteria from the book’s tables.`,build:diagWidget},
+ {type:'widget',cap:`Exercise 4: is <b>-ly</b> in nicely inflectional or derivational? Apply the eleven criteria and form your own opinion.`,build:verdictWidget},
+ {type:'widget',cap:`That is chapter 5. Here is what to take away.`,build:summaryWidget}
+]}
+];
+Lesson.start({label:'Chapter 5 · Inflection and derivation',sections:SECTIONS});
+
+</script>
+</body>
+</html>
