@@ -1,1 +1,257 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>Chapter 11 · Morphology and valence · Understanding Morphology</title>
+<link rel="stylesheet" href="../assets/lesson.css">
+</head>
+<body>
+<script src="../assets/lesson.js"></script>
+<script>
+const {el,seg,T,tl,R,S,chg,mark,strip,shuffle,Stage,app,quizWidget,labWidget,sort3Widget}=Lesson;
+const mq=(id,q,right,wrongs,w)=>({id,q,o:[right,...wrongs],a:0,w});
+const wd=s=>s.length*.58+1;
+const sm=t=>`<span style="font-size:16px;line-height:1.35;display:inline-block">${t}</span>`;
 
+/* Linking diagram: each column = [function, role, roleKind]. The function row sits above the role row, so a vertical alignment is a link. */
+const lk=(cols,l1,l2)=>{const w=cols.length>3?2.1:2.6;
+  return S(R(cols.map((c,i)=>tl('f'+i,c[0],(c[0]==='—'||c[0]==='✕')?'ghost':'aff',w)),l1||'syntactic function'),
+           R(cols.map((c,i)=>tl('r'+i,c[1],c[2]||'stem',w)),l2||'semantic role'));};
+
+/* ---------- Five verbs ---------- */
+const VERBS=[
+ {name:'eat',lang:'English · sbj–obj',desc:`<span class="w">Robert ate a mango.</span> The agent is the subject, the patient the object.`,
+  a:lk([['sbj','agent'],['obj','patient']],'eat: functions'),b:lk([['sbj','agent'],['obj','patient']],'eat: functions')},
+ {name:'like',lang:'English · sbj–obj',desc:`<span class="w">I like this song.</span> The experiencer is the subject.`,
+  a:lk([['sbj','agent'],['obj','patient']],'eat'),b:lk([['sbj','experiencer'],['obj','stimulus']],'like: the experiencer is the subject')},
+ {name:'please',lang:'English · sbj–obj',desc:`<span class="w">This song pleases me.</span> Roughly the same meaning as <i>like</i>, but the roles are linked the other way round. No rule predicts this: speakers must store it.`,
+  a:lk([['sbj','experiencer'],['obj','stimulus']],'like'),b:lk([['sbj','stimulus'],['obj','experiencer']],'please: the stimulus is the subject')},
+ {name:'steal',lang:'English · sbj–obj–obl',desc:`<span class="w">Baba stole my bike from me.</span> The theme is the object and the source is an oblique with <i>from</i>.`,
+  a:lk([['sbj','agent'],['obj','theme'],['obl from','source']],'steal'),b:lk([['sbj','agent'],['obj','theme'],['obl from','source']],'steal')},
+ {name:'rob',lang:'English · sbj–obj–obl',desc:`<span class="w">Baba robbed me of my bike.</span> Same event as <i>steal</i>, but now the source is the object and the theme is oblique with <i>of</i>.`,
+  a:lk([['sbj','agent'],['obj','theme'],['obl from','source']],'steal'),b:lk([['sbj','agent'],['obj','source'],['obl of','theme']],'rob: roles swapped')}
+];
+/* ---------- Valence-changing operations ---------- */
+const OPS=[
+ {name:'Passive',lang:'Function-changing · Chichewa',desc:`<span class="w">Kalata inalembedwa (ndi Naphiri)</span> ‘The letter was written (by Naphiri)’. The suffix -idw/-edw makes the patient the subject, and the agent an optional oblique. The agent is still implied (it licenses ‘deliberately’).`,
+  a:lk([['sbj','agent'],['obj','patient']],'active'),b:lk([['obl by','agent'],['sbj','patient']],'passive: only the linking changes')},
+ {name:'Anticausative',lang:'Event-changing · Russian',desc:`<span class="w">Dver’ zakrylas’</span> ‘The door closed’ (-sja/-s’). The agent and the ‘cause’ part of the event are removed, so no agent phrase and no ‘deliberately’ is possible. The patient becomes the subject almost as a by-product.`,
+  a:lk([['sbj','agent'],['obj','patient']],'Vera closed the door'),b:lk([['—','agent','ghost'],['sbj','patient']],'anticausative: the agent is gone')},
+ {name:'Resultative',lang:'Event-changing · Chichewa',desc:`<span class="w">Chitseko chinatsekeka</span> ‘The door was closed (in a closed state)’ (-ik/-ek). It removes even more: the ‘become’ part of the event goes too, leaving a state.`,
+  a:lk([['sbj','agent'],['obj','patient']],'cause + become'),b:lk([['—','agent','ghost'],['sbj','patient']],'resultative: only the state remains')},
+ {name:'Reflexive',lang:'Borderline · Eastern Armenian',desc:`<span class="w">Seda-n lva-cv-um e</span> ‘Seda is washing (herself)’. The meaning stays the same, but agent and patient are coreferential and share one function.`,
+  a:lk([['sbj','agent'],['obj','patient']],'A acts on B'),b:lk([['sbj','agent = patient','copy']],'reflexive: one participant, two roles')},
+ {name:'Antipassive',lang:'Function-changing · West Greenlandic',desc:`<span class="w">Qimmiq (inunnik) tuqutsivuq</span> ‘The dog killed (people)’. The mirror image of the passive: the patient is demoted to an optional oblique (instrumental case).`,
+  a:lk([['sbj','agent'],['obj','patient']],'active'),b:lk([['sbj','agent'],['obl inst','patient']],'antipassive: the patient is backgrounded')},
+ {name:'Deobjective',lang:'Function-changing · Tzutujil',desc:`<span class="w">x-Ø-ch’ey-oon-i</span> ‘he was hitting’. The verb is fully intransitive and no patient can be expressed. Yet a hitting event still needs something hit, so the patient stays in the event (crossed link).`,
+  a:lk([['sbj','agent'],['obj','patient']],'he hit him'),b:lk([['sbj','agent'],['✕','patient','ghost']],'deobjective: the patient cannot be linked')},
+ {name:'Causative (intr.)',lang:'Event-changing · Japanese',desc:`<span class="w">Hanako ga Taroo o ik-ase-ta</span> ‘Hanako made Taro go’. A causer is added, and the old agent becomes an object.`,
+  a:lk([['sbj','agent']],'Taro goes'),b:lk([['sbj','causer','copy'],['obj','agent']],'causative: a new subject, the old subject is demoted')},
+ {name:'Causative (tr.)',lang:'Event-changing · Japanese',desc:`<span class="w">Hanako ga Taroo ni hon o yom-ase-ta</span> ‘Hanako made Taro read a book’. Languages cannot create a new function for the new role: the old agent of a transitive verb often becomes an indirect object.`,
+  a:lk([['sbj','agent'],['obj','patient']],'Taro reads a book'),b:lk([['sbj','causer','copy'],['iobj','agent'],['obj','patient']],'causative: the agent becomes an indirect object')},
+ {name:'Appl.: recipient',lang:'Function-changing · German be-',desc:`<span class="w">IKEA be-liefert den Nachbarn (mit Möbeln)</span>. The recipient is promoted from indirect object to direct object, and the patient may be dropped or marked with <i>mit</i>.`,
+  a:lk([['sbj','agent'],['obj','patient'],['iobj','recipient']],'IKEA delivers the neighbour furniture'),b:lk([['sbj','agent'],['obl mit','patient'],['obj','recipient']],'applicative: the recipient is now the object')},
+ {name:'Appl.: benefactive',lang:'Event-changing · Chamorro',desc:`<span class="w">Ha hatsa-yi si Pedro ni acho’</span> ‘He lifted the stone for Pedro’. A brand-new participant, the beneficiary, takes the object function, and the patient is demoted to an oblique.`,
+  a:lk([['sbj','agent'],['obj','patient']],'He lifted the stone'),b:lk([['sbj','agent'],['obl','patient'],['obj','beneficiary','copy']],'applicative: a new object')},
+ {name:'Appl.: locative',lang:'Function-changing (arguably) · Ainu',desc:`<span class="w">A-kor kotan a-e-sirepa</span> ‘I arrived at my village’. The prefix e- turns an adverbial location into a direct object, as the transitive subject marker a- shows. If the location is only an adjunct, this is event-changing instead.`,
+  a:lk([['sbj','agent'],['adv','location']],'I arrived at the village'),b:lk([['sbj','agent'],['obj','location']],'applicative: the location is now the object')}
+];
+const KINDSORT=[
+ ['passive','fn','Only the linking changes: the agent is still in the argument structure.'],
+ ['antipassive','fn','The patient is demoted to an optional oblique, but remains in the argument structure.'],
+ ['deobjective','fn','The patient cannot be expressed, yet stays in the event. The book calls patient-backgrounding exclusively function-changing.'],
+ ['anticausative','ev','The agent and the ‘cause’ element are removed from the event structure.'],
+ ['resultative','ev','Even the ‘become’ element is removed: the event turns into a state.'],
+ ['causative','ev','A causer and the ‘cause’ element are added.'],
+ ['reflexive','mix','The meaning stays but the two roles are declared coreferential, so it is a borderline case.'],
+ ['applicative','mix','Recipient and locative applicatives only relink, a benefactive adds a participant: the book calls it mixed.']
+];
+function kindSort(box){sort3Widget(box,KINDSORT,{fn:'Function-changing',ev:'Event-changing',mix:'Borderline / mixed'});}
+
+/* ---------- Incorporation ---------- */
+const INC=[
+ {name:'Guaraní',lang:'Noun incorporation · no clear valence change',desc:`<span class="w">A-mba’e-jogua-ta</span> ‘I’ll go shopping’ (thing-buy). The noun is part of the verb: an adjective cannot modify it. It is also the patient, but that may be only an implicature, as with English lipstick.`,
+  a:lk([['sbj','agent'],['obj','patient']],'a-jogua-ta petei mba’e'),b:lk([['sbj','agent'],['—','patient = noun','copy']],'incorporated noun: it fills the patient')},
+ {name:'Ainu',lang:'Noun incorporation · valence change',desc:`<span class="w">Inaw-ke-an</span> ‘I make an inaw’. The compound is intransitive: the subject marker is intransitive -an, not transitive a-. Here the patient reading must be part of the rule (11.30).`,
+  a:lk([['sbj','agent'],['obj','patient']],'inaw a-ke (transitive)'),b:lk([['sbj','agent'],['—','patient = noun','copy']],'inaw-ke-an (intransitive)')},
+ {name:'Nahuatl',lang:'Noun incorporation · no valence change',desc:`<span class="w">Ya’ ki-kocčillo-tete’ki panci</span> ‘He cut the bread with the knife’. The incorporated noun is an <i>instrument</i>, so the verb keeps its patient object. The valence change is only apparent.`,
+  a:lk([['sbj','agent'],['obj','patient']],'cut the bread'),b:lk([['sbj','agent'],['obj','patient']],'knife incorporated, valence unchanged')}
+];
+
+/* ---------- V-V compounds ---------- */
+const vw=r=>Math.max(2.4,r.length*.2);
+const vv=(name,lang,desc,v1,v2,cp,l1,l2,lc,ck)=>({name,lang,desc,
+  a:S(R(v1.map((r,i)=>tl('a'+i,r,'stem',vw(r))),l1),R(v2.map((r,i)=>tl('b'+i,r,'aff',vw(r))),l2)),
+  b:S(R(v1.map((r,i)=>tl('a'+i,r,'stem',vw(r))),l1),R(v2.map((r,i)=>tl('b'+i,r,'aff',vw(r))),l2),R(cp.map((r,i)=>tl('c'+i,r,ck||'ok',vw(r),{enter:'bottom'})),lc))});
+const VV=[
+ vv('tang-huai','Same argument structure · Chinese','<span class="w">tang-huai</span> [iron-break] ‘ruin by ironing’. Both verbs have an agent and a patient, so the compound has the same two.',['agent','patient'],['agent','patient'],['agent','patient'],'tang ‘iron’','huai ‘break’','compound'),
+ vv('uchi-agaru','Head decides · Japanese','<span class="w">uchi-agaru</span> [hit-go.up] ‘be hit high up’. The second verb is the head: its theme is identified with the patient of <i>uchi</i>, and the agent of <i>uchi</i> vanishes (no ‘by John’).',['agent','patient'],['theme','direction'],['theme = patient','direction'],'uchi ‘hit’','agaru ‘go up’','compound'),
+ vv('hataraki-tsukareru','Theme = agent · Japanese','<span class="w">hataraki-tsukareru</span> [work-get.tired] ‘get tired from working’. An intransitive theme is identified with an intransitive agent.',['agent'],['theme'],['theme = agent'],'hataraki ‘work’','tsukareru ‘get tired’','compound'),
+ vv('mochi-kaeru','Argument mixing · Japanese','<span class="w">mochi-kaeru</span> [have-return] ‘bring back’. All arguments of both verbs survive: agent from <i>kaeru</i>, theme from <i>mochi</i>, direction from <i>kaeru</i>.',['possessor','theme'],['agent','direction'],['agent','theme','direction'],'mochi ‘have’','kaeru ‘return’','compound'),
+ vv('qi-lei','Ambiguous · Chinese','<span class="w">qi-lei</span> [ride-tired]. Zhangsan qi-lei le ma can mean Zhangsan got tired from riding, or the horse got tired from being ridden. The theme of <i>lei</i> is identified with either the agent or the patient of <i>qi</i>.',['agent','patient'],['theme'],['theme = agent or patient'],'qi ‘ride’','lei ‘tired’','compound','var')
+];
+
+/* ---------- Synthetic compounds ---------- */
+const SYN=[
+ ['truck driver','syn','Truck fills the patient of drive: it really is a synthetic compound.'],
+ ['chain smoker','non','A chain smoker does not smoke chains: it is not an argument.'],
+ ['whale hunting','syn','Whale is the patient of hunting.'],
+ ['food poisoning','non','Food poisoning does not poison food, unlike rat poisoning.'],
+ ['fire-fighter','syn','Fire is the patient of fight in this sense.'],
+ ['freedom fighter','non','A freedom fighter does not fight freedom: not an argument.'],
+ ['rat poisoning','syn','Rat is the patient of poisoning.'],
+ ['breast feeding','non','Nobody feeds a breast: the dependent is not an argument.']
+];
+const APPROACHES=[
+ ['Different structure','[[N V] -er]: the dependent is inside the verbal part, so it is interpreted as an argument. This explains chain pipe smoker, but *pipe chain smoker. But it wrongly predicts N–V compounds: *to pipe-smoke, *to hat-sell, *to churchgo. (Skydive is a back-formation.)'],
+ ['Special linking rule','Like noun incorporation: the dependent fills the patient of the noun hunting, so the compound has only an oblique by-agent left (11.43). It captures restrictions such as *fisherman hunting of whales, and it fits event nouns.'],
+ ['No special rule','They are ordinary N–N compounds: ‘N2 with some relation to N1’. The argument reading is a pragmatic implicature. This unifies synthetic and affix compounds (green-eyed, dark-haired) but overpredicts, e.g. *fisherman hunting of whales.']
+];
+function approachWidget(box){
+  const chips=el('div','chips'),res=el('div','res');box.append(chips,res,el('p','hint','No consensus has formed. Different approaches may suit different compounds or languages.'));
+  APPROACHES.forEach(a=>{const b=el('button','chip',a[0]);b.onclick=()=>{[...chips.children].forEach(x=>x.classList.remove('on'));b.classList.add('on','done');res.innerHTML=a[1];};chips.append(b);});
+  chips.children[0].click();
+}
+function synSort(box){sort3Widget(box,SYN,{syn:'Synthetic (argument)',non:'Not synthetic'});}
+
+/* ---------- Nouns ---------- */
+const NOUNS=[
+ ['I have an examination tomorrow.','simple','A simple event noun: it can take an article, and verbal arguments are not required.'],
+ ['The vet’s careful examination of Fido’s eyes took a long time.','complex','A complex event noun: definite, and its patient is expressed (of Fido’s eyes).'],
+ ['The examination is on your desk.','concrete','The paper, not an event: a concrete noun from metonymic shift.'],
+ ['The frequent examination of the evidence is necessary.','complex','A frequency modifier and an obligatory patient show it is a complex event noun.'],
+ ['We are witnessing a new development.','simple','Indefinite and without arguments: a simple event noun.'],
+ ['The continuing destruction of rainforests will speed up desertification.','complex','Definite, with an obligatory patient: complex.'],
+ ['Tomorrow I have three examinations.','simple','It is pluralized, so it cannot be a complex event noun.']
+];
+function nounSort(box){sort3Widget(box,NOUNS.map(x=>[sm(x[0]),x[1],x[2]]),{simple:'Simple event noun',complex:'Complex event noun',concrete:'Concrete noun'});}
+
+/* ---------- Dual nature ---------- */
+const DUAL=[
+ ['German pfeifend: ‘im Wald laut’ modifiers','int','The adverb and the locative come from the verb: internal syntax follows the lexeme class V.'],
+ ['German pfeifend: agreement -e (der pfeifende Wanderer)','ext','Adjective agreement shows the word-form class A in the external syntax.'],
+ ['Lezgian masdar: agent in the absolutive case','int','The masdar keeps the verb’s valence completely: lexeme class V.'],
+ ['Lezgian masdar: nominal case inflection','ext','Case marking and noun positions show the word-form class N.'],
+ ['Hungarian proprietive: ‘extremely great power-having’ (adverb + adjective)','int','Only nouns take that prenominal modifier: lexeme class N.'],
+ ['Hungarian proprietive: position and plural like an adjective','ext','External syntax follows the word-form class A.']
+];
+function dualSort(box){sort3Widget(box,DUAL.map(x=>[sm(x[0]),x[1],x[2]]),{int:'Internal syntax (lexeme class)',ext:'External syntax (word-form class)'});}
+
+/* ---------- Exercise rules (my formulations) ---------- */
+const EXR=[
+ {name:'supportive of',lang:'Exercise 1 · my formulation',desc:`<span class="w">support → supportive of</span>. Rule: /X/v with sbj–obj, agent–patient becomes /Xive/a, whose subject is the agent and whose patient is an <i>of</i>-oblique: ‘A is disposed to X B’. The deadjectival pattern is parallel to (11.47).`,
+  a:lk([['sbj','agent'],['obj','patient']],'support (verb)'),b:lk([['sbj','agent'],['obl of','patient']],'supportive (adjective)')},
+ {name:'out-',lang:'Exercise 2 · my formulation',desc:`<span class="w">run → outrun</span>. The prefix out- adds an object: the new object is the participant who is surpassed. Function structure: sbj becomes sbj–obj. Argument structure: agent becomes agent–patient. Meaning: ‘A V-s more or better than B’. An applicative of the event-changing kind (compare Chamorro).`,
+  a:lk([['sbj','agent']],'run'),b:lk([['sbj','agent'],['obj','patient = rival','copy']],'outrun: a new object is created')}
+];
+
+/* ---------- Summary ---------- */
+function summaryWidget(box){
+  box.append(el('ul','pts',`
+   <li><b>Valence</b> has two parts: syntactic valence (function structure) and semantic valence (argument structure). Which role takes which function must be stored for some verbs (like/please, steal/rob).</li>
+   <li><b>Function-changing</b> operations (passive, antipassive, deobjective) only relink. <b>Event-changing</b> ones (anticausative, resultative, causative) also change the event. Reflexive and applicative are borderline. Function-changing tends to be inflectional, event-changing derivational.</li>
+   <li>Inflectional operations can apply after derivational ones, not the reverse: passive after applicative is fine (Chichewa), but not applicative after passive.</li>
+   <li><b>Compounds:</b> noun incorporation may or may not change valence. V–V compounds combine arguments in several ways. Synthetic compounds have three competing analyses.</li>
+   <li><b>Transposition:</b> complex event nouns inherit the verb’s arguments (as of and by phrases). Simple event nouns and agent nouns do not.</li>
+   <li><b>Transpositional inflection</b> keeps valence completely, so participles, masdars and proprietives have a lexeme word-class (internal syntax) and a word-form word-class (external syntax).</li>`));
+  let tot=0,good=0;const rows=[];
+  SECTIONS.forEach(s=>{let n=0,g=0;s.steps.forEach(st=>{if(st.type==='quiz')st.qs.forEach(q=>{n++;if(app.score[q.id])g++;});});
+    if(n){tot+=n;good+=g;rows.push(`<li>${s.title}: <b>${g}/${n}</b></li>`);}});
+  box.append(el('p','res',`<b>Quiz results (first try): ${good} of ${tot}</b><ul class="pts">${rows.join('')}</ul>`));
+}
+
+/* ---------- Quizzes ---------- */
+const Q={
+ v1:mq('v1','What is the valence of a verb?','Its syntactic functions plus the semantic roles linked to them',['Only its number of syllables','Only its semantic roles','Only its inflection class'],'It has two parts: function structure (syntactic valence) and argument structure (semantic valence).'),
+ v2:mq('v2','Why must speakers store the links for like and please?','The two verbs mean nearly the same but link their roles to different functions',['They are irregular verbs','They are borrowed','They have no arguments'],'The linking cannot be predicted from the meanings, so it is part of the lexical entry.'),
+ v3:mq('v3','Steal and rob mean the same event. How do they differ?','The theme is the object of steal but oblique with of for rob, and the source takes the other function',['The agent is different','Only rob has a patient','Only steal has a subject'],'Steal: obj = theme, obl from = source. Rob: obj = source, obl of = theme.'),
+ o1:mq('o1','Chichewa passive Kalata inalembedwa: what has changed?','Only the linking: the patient is the subject and the agent an optional oblique',['The agent is removed from the argument structure','The meaning has become a state','A causer has been added'],'The agent is still implied, as ‘deliberately’ in Chitseko chinatsekedwa mwadala shows.'),
+ o2:mq('o2','Why is the anticausative event-changing?','It removes the agent together with the ‘cause’ part of the event',['It only shifts the patient to subject','It adds a beneficiary','It makes the verb reflexive'],'Hence *The door closed by Vera and no ‘deliberately’. The patient becoming subject follows almost automatically.'),
+ o3:mq('o3','What does the resultative remove that the anticausative does not?','The ‘become’ part of the event, leaving only a state',['The patient','The subject','The verb stem'],'Cause and become are both gone: the door is in a closed state.'),
+ o4:mq('o4','Which operation backgrounds the patient but leaves it in the argument structure?','Antipassive',['Passive','Anticausative','Causative'],'The patient becomes an optional oblique (instrumental in West Greenlandic).'),
+ o5:mq('o5','In a causative like Japanese ik-ase-ta ‘made go’, what happens to the original agent?','It becomes an object (an indirect object if the verb is transitive)',['It is removed','It becomes the causer','It stays the subject'],'Languages cannot create new functions for the new role, so the causer takes the subject slot.'),
+ o6:mq('o6','Why is it hard to classify applicatives as only one kind?','Recipient and locative types relink, but benefactive adds a participant, and even this line is blurry',['They never change valence','They are always inflectional','They only exist in English'],'The same affix often serves both, and ‘location’ may or may not be an argument.'),
+ o7:mq('o7','Which ordering is possible in Chichewa?','Applicative then passive (phik-ir-idwa) and resultative then applicative',['Passive then applicative','Passive then resultative','None of these'],'A function-changing (inflectional) operation may follow an event-changing (derivational) one, not the reverse.'),
+ c1:mq('c1','What does Ainu inaw-ke-an show about incorporation?','The compound is intransitive: the patient reading is part of the rule, not an implicature',['The noun is an instrument','Incorporation never changes valence','Ainu has no transitive verbs'],'The subject marker is -an (intransitive), not a- (transitive), so valence has really changed.'),
+ c2:mq('c2','In Nahuatl ki-kocčillo-tete’ki ‘cut with a knife’, what does the incorporated noun show?','Incorporated nouns need not be patients, so the valence change is only apparent in some languages',['Nahuatl has no object','The knife is the patient','Instruments are impossible'],'If the relation is vague, the patient reading is just an implicature.'),
+ c3:mq('c3','Japanese uchi-agaru ‘be hit up’: which verb’s argument structure dominates?','The second verb, agaru: the first verb’s agent disappears',['The first verb, uchi','Both fully survive','Neither'],'Japanese compounds are right-headed, and the head’s arguments carry over.'),
+ c4:mq('c4','Why is mochi-kaeru ‘bring back’ called argument-mixing?','All arguments from both verbs end up in the compound',['It has no arguments','Only the second verb’s survive','The two verbs are the same'],'It contrasts with uchi-agaru, where an argument vanishes.'),
+ c5:mq('c5','The structure approach to synthetic compounds wrongly predicts…','Compound verbs like *to pipe-smoke or *to hat-sell',['Pipe chain smoker','Truck driver','Whale hunting'],'To skydive is a back-formation from skydiver or skydiving, not a direct N–V compound.'),
+ c6:mq('c6','Which approach says the argument reading of truck driver is just a pragmatic implicature?','The approach that treats it as an ordinary N–N compound',['The special linking rule','The structure approach','None of them'],'It treats truck driver, chain smoker and green-eyed as one family: affix compounds.'),
+ t1:mq('t1','A transpositional derivation like examine → examination changes…','The word-class, and the arguments become of- and by-phrases',['Only the pronunciation','Only the meaning','Nothing about valence'],'Deverbal nouns behave like ordinary nouns: possessor and oblique arguments, not subject and object.'),
+ t2:mq('t2','Which noun inherits the verb’s argument structure?','A complex event noun',['A simple event noun','A concrete noun','An agent noun'],'Complex event nouns need the patient and may add a by-agent.'),
+ t3:mq('t3','Why is *an explorer of America in order to discover El Dorado impossible, while the exploration of America in order to discover El Dorado is fine?','Only the complex event noun keeps the agent role that licenses a purpose clause',['Explorer is a verb','Of is the wrong preposition','Agent nouns are never definite'],'Agent nouns lack an argument structure, so ‘of Antarctica’ is just a possessive phrase read pragmatically.'),
+ t4:mq('t4','The book uses Russian gordyj / gordit’sja to show that…','Deadjectival verbs may inherit an adjective’s oblique argument (here, the instrumental)',['Adjectives never take arguments','Reflexives are inflectional','Verbs cannot be derived from adjectives'],'English proud of → pride in is similar, though with an idiosyncratic preposition.'),
+ i1:mq('i1','What do participles, masdars and proprietives preserve?','All of the base’s argument structure and combinatory possibilities',['Only the subject','Only the meaning','None of it'],'This is why they are treated as inflected forms, not as new lexemes.'),
+ i2:mq('i2','The solution to the paradox of word-class-changing inflection is…','A lexeme word-class for the internal syntax and a word-form word-class for the external syntax',['Treating them as ordinary adjectives','Treating them as verbs only','Ignoring their dependents'],'A participle is a verb as a lexeme, but an adjective as a word-form: ⟨⟨V⟩A⟩.'),
+ x1:mq('x1','Exercise 3: ruler over a large empire is accepted by many speakers. Which generalization does it contradict?','That agent nouns do not inherit oblique arguments',['That complex event nouns need a patient','That passives are inflectional','That -able adjectives need an object'],'This is my analysis: the claim was that voter for Mitterrand and thinker about deep problems are impossible.')
+};
+
+const SECTIONS=[
+{title:'Valence',steps:[
+ {type:'stage',cap:`Knowing a verb’s meaning gives you its <b>semantic roles</b>: eat has an agent and a patient. But using it needs <b>syntactic functions</b> too: subject, object, oblique. The two together are the verb’s <b>valence</b>.`,
+  spec:lk([['sbj','agent'],['obj','patient']],'eat · syntactic function (function structure)','semantic role (argument structure)')},
+ {type:'stage',cap:`The links cannot always be predicted. <b>Like</b> and <b>please</b> mean almost the same, yet the experiencer is the subject of one and the object of the other.`,
+  spec:lk([['sbj','experiencer'],['obj','stimulus']],'I like this song','roles')},
+ {type:'stage',cap:`Speakers must therefore store the functions as well: this song <b>pleases</b> me.`,
+  spec:lk([['sbj','stimulus'],['obj','experiencer']],'This song pleases me','roles (same meaning, different linking)')},
+ {type:'widget',cap:`Compare five verbs. The roles stay put and the functions move: tap to see how steal and rob swap them.`,build:b=>labWidget(b,VERBS,'Switch the verb','Back')},
+ {type:'quiz',cap:'Check yourself.',qs:[Q.v1,Q.v2,Q.v3]}
+]},
+{title:'Valence-changing operations',steps:[
+ {type:'stage',cap:`Morphology can change valence in two ways. <b>Function-changing</b> operations (voice) only change which role takes which function. <b>Event-changing</b> operations change the event itself, and with it the arguments.`,
+  spec:S(R([tl('a','function-changing','aff',6.4)],'only the linking'),R([tl('b','event-changing','mod',5.6)],'the event, and so the arguments'))},
+ {type:'widget',cap:`Eleven operations, from the book’s languages. Each chip shows the base linking, then the derived one.`,build:b=>labWidget(b,OPS,'Apply the operation','Back')},
+ {type:'widget',cap:`Which kind of operation is each? Sort them.`,build:kindSort},
+ {type:'stage',cap:`The two types correlate with inflection and derivation. Passive and antipassive are mostly inflectional. Anticausative, resultative and causative are mostly derivational. So a function-changing operation can follow an event-changing one, but not the reverse.`,
+  spec:S(R([tl('a','phik-ir-idwa','ok',5.6)],'cook-appl-pass: applicative, then passive'),R([tl('b','*tsekul-idw-ira','bad',5.8)],'open-pass-appl: impossible'),R([tl('c','tseku-k-ira','ok',5)],'open-result-appl: both event-changing'))},
+ {type:'stage',cap:`English has valence changes with no marker at all. <b>I opened the door / the door opened</b> resembles a causative pair, and <b>I baked a cake for her / baked her a cake</b> an applicative. This is <b>conversion</b>, applied to valence.`,
+  spec:S(R([tl('a','I opened the door','plain',7.4)],'agent + patient'),R([tl('b','The door opened','plain',6.4,{from:'a'})],'like the anticausative'))},
+ {type:'quiz',cap:'Check yourself.',qs:[Q.o1,Q.o2,Q.o3,Q.o4,Q.o5,Q.o6,Q.o7]}
+]},
+{title:'Valence in compounding',steps:[
+ {type:'stage',cap:`Compounds can change valence when one member takes arguments. We look at three types: <b>noun incorporation</b>, <b>V–V compounds</b> and <b>synthetic compounds</b>.`,
+  spec:S(R([tl('a','noun incorporation','stem',6.2)],''),R([tl('b','V–V compounds','stem',5)],''),R([tl('c','synthetic compounds','stem',6.2)],''))},
+ {type:'widget',cap:`Noun incorporation. In Guaraní the noun is clearly inside the verb, but does valence change? Languages differ.`,build:b=>labWidget(b,INC,'Incorporate the noun','Back')},
+ {type:'widget',cap:`V–V compounds. How do the arguments of two verbs combine? Five Chinese and Japanese cases.`,build:b=>labWidget(b,VV,'Make the compound','Back')},
+ {type:'widget',cap:`Synthetic compounds: truck driver, whale hunting. Which of these really fill an argument of the head?`,build:synSort},
+ {type:'widget',cap:`Three ways to describe them. Tap each for its strength and weakness.`,build:approachWidget},
+ {type:'quiz',cap:'Check yourself.',qs:[Q.c1,Q.c2,Q.c3,Q.c4,Q.c5,Q.c6]}
+]},
+{title:'Transpositional derivation',steps:[
+ {type:'stage',cap:`A derivation is <b>transpositional</b> when it changes the word-class. Valence is affected when a verb or adjective is transposed. The vet examined the pet: subject and object.`,
+  spec:lk([['sbj','agent'],['obj','patient']],'examine (verb)')},
+ {type:'stage',cap:`In the noun <b>examination</b>, the same roles must be expressed like a noun’s: the patient as an <i>of</i>-possessor, the agent as a <i>by</i>-oblique. The derivative <b>inherits</b> the base’s valence.`,
+  spec:lk([['obl by','agent'],['poss of','patient']],'the examination of the pet by the vet')},
+ {type:'widget',cap:`Event nouns vary. Simple ones are like ordinary nouns, complex ones keep verbal properties, and concrete ones are not events at all. Classify seven sentences.`,build:nounSort},
+ {type:'stage',cap:`Agent nouns do not inherit arguments. <b>*voter for Mitterrand</b>, <b>*thinker about deep problems</b> are impossible. <b>Explorer of Antarctica</b> is just a possessive phrase read pragmatically. Likewise -able adjectives: *convincible of the eventual success.`,
+  spec:S(R([tl('a','*voter for Mitterrand','bad',8)],'no inheritance'),R([tl('b','explorer of Antarctica','ok',7.6)],'a possessive phrase'))},
+ {type:'stage',cap:`Adjectives inherit more easily. Russian <b>gordyj</b> ‘proud’ takes an instrumental, and so does <b>gorditsja</b> ‘prides himself’. English <b>proud of</b> becomes <b>pride in</b>, with an idiosyncratic change.`,
+  spec:S(R([tl('a','gord-yj','stem',3.2),tl('b','+ inst','aff',2.2)],'proud of his achievements'),R([tl('c','gord-it’-sja','ok',4.4,{from:'a'}),tl('d','+ inst','aff',2.2,{from:'b'})],'prides himself on them'))},
+ {type:'quiz',cap:'Check yourself.',qs:[Q.t1,Q.t2,Q.t3,Q.t4]}
+]},
+{title:'Transpositional inflection',steps:[
+ {type:'stage',cap:`In <b>transpositional inflection</b>, all of the base’s arguments are preserved. German participle: <b>der im Wald laut pfeifende Wanderer</b>. The participle keeps its locative and manner modifiers, but looks like an adjective from outside.`,
+  spec:S(R([tl('a','im Wald','plain',3.6),tl('b','laut','plain',2.6),tl('c','pfeifend','stem',3.6),tl('d','Wanderer','plain',4.2)],'the hiker who is whistling loud in the forest'))},
+ {type:'stage',cap:`So it is a <b>verb</b> as a lexeme but an <b>adjective</b> as a word-form. The two classes are written as nested brackets: 〈〈V〉A〉.`,
+  spec:S(R([tl('p','pfeif-','stem',3),tl('e','-end-e','aff',3)],'participle',[{id:'b1',from:0,to:0,label:'V · lexeme',lvl:1},{id:'b2',from:0,to:1,label:'A · word-form',lvl:2}]))},
+ {type:'stage',cap:`Compare the derivational agent noun <b>Pfeifer</b>: it is simply a noun. In derivation the derivative has the head’s class properties, in inflectional transposition both classes are preserved.`,
+  spec:S(R([tl('p','pfeif-','stem',3),tl('e','-er','aff',2)],'agent noun',[{id:'b1',from:0,to:1,label:'N',lvl:1}]))},
+ {type:'widget',cap:`Which class governs? Sort the evidence for German participles, Lezgian masdars and Hungarian proprietives.`,build:dualSort},
+ {type:'stage',cap:`The line between transpositional inflection and derivation blurs. English <b>Maria’s criticizing Robert</b> recodes the subject as a possessor, and Spanish or Greek action nouns accept adverbs. This fits the continuum view from chapter 5.`,
+  spec:S(R([tl('a','Maria’s criticizing Robert','plain',9.6)],'a possessor for the subject'),R([tl('b','la inauguración hoy','plain',10)],'a derived noun with adverbials'))},
+ {type:'quiz',cap:'Check yourself.',qs:[Q.i1,Q.i2]}
+]},
+{title:'Exercises',steps:[
+ {type:'widget',cap:`Exercises 1 and 2: write the rule for an adjective like <b>supportive of</b>, and for the prefix <b>out-</b>. The book gives no key, so these are my formulations.`,build:b=>labWidget(b,EXR,'Apply the rule','Back')},
+ {type:'quiz',cap:`Exercise 3, based on the book.`,qs:[Q.x1]},
+ {type:'widget',cap:`That is chapter 11. Here is what to take away.`,build:summaryWidget}
+]}
+];
+
+Lesson.start({label:'Chapter 11 · Morphology and valence',sections:SECTIONS});
+</script>
+</body>
+</html>
