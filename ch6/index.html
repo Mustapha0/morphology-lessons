@@ -1,1 +1,292 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>Chapter 6 · Productivity · Understanding Morphology</title>
+<link rel="stylesheet" href="../assets/lesson.css">
+</head>
+<body>
+<script src="../assets/lesson.js"></script>
+<script>
+const {el,seg,T,tl,R,S,chg,mark,strip,shuffle,Stage,app,quizWidget,labWidget,sort3Widget}=Lesson;
+const mq=(id,q,right,wrongs,w)=>({id,q,o:[right,...wrongs],a:0,w});
+const wd=s=>s.length*.58+1;
 
+/* ---------- Restriction explorer ---------- */
+const RESTR={
+ Phonological:[
+  ['mesa','mesilla',1,`Spanish diminutive -illo. Fine on mesa and grupo…`],
+  ['gallo','*gallillo',0,`…but not on gallo or camello: it avoids repeating the sound written ll.`],
+  ['draw','drawee',1,`English patient-noun -ee works on draw and pay…`],
+  ['free','*freeee',0,`…but not on free or accompany: it avoids repeating the vowel /i/.`],
+  ['private','privatize',1,`English -ize likes a strong–weak rhythm: privatize, globalize.`],
+  ['secure','*securize',0,`The base ends in a stressed syllable, so -ize avoids it (also *corruptize).`],
+  ['black','blacken',1,`English -en takes only monosyllabic bases. There is no obvious phonetic reason: a purely arbitrary restriction.`]],
+ Semantic:[
+  ['König','Königin',1,`German female-noun -in: ‘king’ → ‘queen’.`],
+  ['Baum','*Bäumin',0,`We do not think of trees as having gender, so the rule makes no sense here.`],
+  ['colonize','decolonize',1,`English reversive de- needs a verb that denotes a reversible process.`],
+  ['assassinate','*deassassinate',0,`Hard to interpret outside science fiction: an assassination is not reversible.`],
+  ['bogatyj','bogatstvo',1,`Russian quality-noun -stvo takes adjectives for properties of human beings.`],
+  ['vjalyj','*vjal’stvo',0,`‘Withered’ describes objects, not people. There is no intrinsic reason why -stvo should refuse it: an arbitrary semantic restriction.`]],
+ Pragmatic:[
+  ['Löwe','Löwin',1,`‘Lioness’: it is useful to distinguish male and female lions.`],
+  ['Käfer','?Käferin',0,`‘Female beetle’ turns up on the internet, but speakers react to it much as to Bäumin. For beetles and worms, the sex distinction is simply not useful.`]],
+ Morphological:[
+  ['diber','dibur',1,`Modern Hebrew action nouns in CiC(C)uC, only from verbs of one inflection class (CiC(C)eC): ‘speak’ → ‘talk’.`],
+  ['katav','*kituv',0,`Verbs of other classes (CaCaC, hiCCiC…) cannot form action nouns this way.`],
+  ['begun','begun’ja',1,`Russian female-noun -ja combines only with nouns already derived by -un. It is 100% possible, but rare, because -un is not very productive.`]],
+ 'Borrowed strata':[
+  ['brutal','brutality',1,`English -ity, -ive, -ous and -al are mostly restricted to Latinate bases.`],
+  ['brittle','*brittality',0,`Brittle is a Germanic base. Likewise *fightive, *spinstrous, *motheral (cf. maternal).`],
+  ['khacita','khacitate',1,`Kannada quality-noun -te comes with Sanskrit loans: ‘certain’ → ‘certainty’.`],
+  ['kul.l.a','*kul.l.ate',0,`A native, non-Sanskrit base: ‘short’.`],
+  ['amerika','*hoo-amerika',0,`Japanese V+N compounds were borrowed from Chinese and still work only with Chinese stems (bei-koku, doku-syo).`]]
+};
+function restrictWidget(box){
+  const tabs=el('div','tabs'),chips=el('div','chips'),host=el('div','stage'),res=el('div','res','Choose a kind of restriction, then a case.');
+  box.append(tabs,chips,host,res);const st=new Stage(host);let cur='Phonological',tm=null;const tb={};
+  Object.keys(RESTR).forEach(k=>{const b=el('button','chip'+(k===cur?' on':''),k);b.onclick=()=>{cur=k;fill();};tabs.append(b);tb[k]=b;});
+  function fill(){Object.keys(tb).forEach(k=>tb[k].classList.toggle('on',k===cur));chips.innerHTML='';
+    RESTR[cur].forEach(([b,r,ok,note])=>{const c=el('button','chip',`${b} → ${r}`);
+      c.onclick=()=>{clearTimeout(tm);[...chips.children].forEach(x=>x.classList.remove('on'));c.classList.add('on','done');
+        st.set(S(R([tl('b',b,'stem',wd(b))],'base')));
+        tm=setTimeout(()=>{st.set(S(R([tl('b',b,'stem',wd(b))],'base'),R([tl('r',r,ok?'ok':'bad',wd(r),{from:'b'})],ok?'possible':'blocked by the restriction')));},700);
+        res.className='res '+(ok?'good':'bad');res.innerHTML=`<span class="w">${r}</span><br>${note}`;};
+      chips.append(c);});
+    chips.children[0].click();}
+  fill();
+}
+
+/* ---------- Parsing ratio vs productivity (Table 6.10) ---------- */
+function parseWidget(box){
+  const D=[['-ence',.1,0.0],['-ity',.17,.1],['-ate',.31,.3],['-dom',.5,.2],['-ness',.51,.8],['-ish',.58,.5],['-like',.68,38.1],['-proof',.8,5.5],['-less',.86,1.7]];
+  const tabs=el('div','tabs'),list=el('div'),res=el('div','res');box.append(tabs,list,res);let v=0;
+  const b0=el('button','chip on','Parsing ratio'),b1=el('button','chip','Productivity (100 × P)');tabs.append(b0,b1);
+  b0.onclick=()=>{v=0;draw();};b1.onclick=()=>{v=1;draw();};
+  function draw(){b0.classList.toggle('on',v===0);b1.classList.toggle('on',v===1);list.innerHTML='';
+    const mx=Math.max(...D.map(d=>d[v+1]));
+    D.forEach(d=>{const r=el('div','ebar');r.style.gridTemplateColumns='62px 1fr 44px';
+      r.innerHTML=`<span class="bl">${d[0]}</span><div class="bt"><i class="${v?'wf':'mo'}" style="width:${Math.max(1.5,d[v+1]/mx*100)}%"></i></div><b>${d[v+1]}</b>`;list.append(r);});
+    res.innerHTML=v===0?'<b>Parsing ratio</b>: the share of an affix’s words that are decomposed rather than stored. A high ratio keeps the affix itself in frequent use (strong memory strength).'
+      :'<b>Productivity P (×100)</b>: from section 6.5(v). Mostly it rises with the parsing ratio (-ity and -ence are low, -less and -proof higher), but not perfectly. -like is far ahead of everything, so the bars for the rest look tiny.';}
+  draw();
+}
+
+/* ---------- Blocking: Italian -ità ---------- */
+function blockWidget(box){
+  const D=[['coraggioso','coraggio','‘courage’',52.70,0],['pietoso','pietà','‘pity’',34.04,0],['desideroso','desiderio','‘desire’',31.92,0],['fiducioso','fiducia','‘confidence’',30.79,0],['orgoglioso','orgoglio','‘pride’',10.64,0],
+   ['armonioso','armonia','‘harmony’',4.13,1],['rigoroso','rigore','‘rigour’',3.42,1],['malizioso','malizia','‘malice’',0,1],['acrimonioso','acrimonia','‘acrimony’',0,1],['parsimonioso','parsimonia','‘parsimony’',0,1],['ignominioso','ignominia','‘ignominy’',0,1]];
+  const host=el('div','stage'),chips=el('div','chips'),res=el('div','res','Tap an adjective: can -ità make its quality noun?');box.append(chips,host,res);const st=new Stage(host);
+  D.forEach(([a,n,g,f,ok])=>{const noun=a.replace(/oso$/,'osità');const c=el('button','chip',a);
+    c.onclick=()=>{[...chips.children].forEach(x=>x.classList.remove('on'));c.classList.add('on','done');
+      st.set(S(R([tl('a',a,'stem',wd(a)),tl('o','→','op',.8),tl('n',(ok?'':'*')+noun,ok?'ok':'bad',wd(noun)+.4)],ok?'the rule applies':'blocked'),
+               R([tl('k',n,'lex',wd(n),{sub:String(f)})],'competing word '+g+' · frequency in the corpus')));
+      res.className='res '+(ok?'good':'bad');
+      res.innerHTML=ok?`<span class="w">${noun}</span> exists. The competing noun <i>${n}</i> is rare (frequency ${f}${f===0?', not in the corpus':''}), so it is weakly retrieved and does not block.`
+        :`<span class="w">*${noun}</span> is blocked by <i>${n}</i>, which is frequent (${f}) and so retrieved fast.`;};
+    chips.append(c);});
+}
+
+/* ---------- Lexical gang (i/u) ---------- */
+function gangExamples(){
+  const mk=(v,p,kind)=>{const L=T(v,'v');const i=v.indexOf('i');
+    if(kind==='gang')return {name:v,lang:'In the gang: /(s)C(C)ɪŋ/ with i → u',desc:`<span class="w">${v} → ${p}</span> follows the i/u pattern, the dominant one among verbs of this shape.`,
+      a:S(R(L,'present')),b:S(R(chg(L,{[i]:'u'}),'past'))};
+    if(kind==='suffix')return {name:v,lang:'Outside the gang',desc:`<span class="w">${v} → ${p}</span> takes -ed. It is a possible model, but the i/u pattern is far more common among verbs of this shape (7 of 13).`,
+      a:S(R(L,'present')),b:S(R([...L,tl('e','-ed','aff',1.4,{enter:'right'})],'past'))};
+    if(kind==='vowel')return {name:v,lang:'Outside the gang',desc:`<span class="w">${v} → ${p}</span> uses i → a, a pattern of its own.`,a:S(R(L,'present')),b:S(R(chg(L,{[i]:'a'}),'past'))};
+    return {name:v,lang:'Outside the gang',desc:`<span class="w">${v} → ${p}</span> is irregular.`,a:S(R(L,'present')),b:S(R([tl('p',p,'mod',wd(p),{from:'v0'})],'past'))};};
+  return [['cling','clung','gang'],['fling','flung','gang'],['sling','slung','gang'],['string','strung','gang'],['wring','wrung','gang'],['sting','stung','gang'],['swing','swung','gang'],
+    ['ding','dinged','suffix'],['sing','sang','vowel'],['bring','brought','irr']].map(x=>mk(...x));
+}
+
+/* ---------- Six measures ---------- */
+function measuresWidget(box){
+  const M=[
+   ['(i) Type frequency','Count the actual words formed by the pattern.',S(R([tl('t','number of actual words','stem',7)],'easy to count in a dictionary')),'English -ment has hundreds of words but only four twentieth-century neologisms in the OED: not productive. -ese has few words but can be used freely.'],
+   ['(ii) Possible words','Count the possible words the pattern could form.',S(R([tl('t','number of possible words','stem',7.6)],'hard: needs every restriction')),'Hard to measure. And en-/em- should fit any container noun (entomb, ensnare) yet is unproductive: *embox, *encar.'],
+   ['(iii) Exhaustion','The ratio of actual to possible words.',S(R([tl('a','actual','stem',2.6),tl('b','÷','op',.6),tl('c','possible','aff',2.8)],'degree of exhaustion')),'Needs the count in (ii). For N+N compounds the set of possible words is infinite, so the ratio is tiny even though the pattern is highly productive.'],
+   ['(iv) Neologisms over time','Count the neologisms attested in a period.',S(R([tl('t','neologisms per period','stem',6.4)],'diachronic productivity')),'Needs a good historical dictionary like the OED, and lexicographers overlook new words of very productive patterns. Corpora can show how -gate (Watergate, Irangate) gained and lost productivity.'],
+   ['(v) P','Hapaxes with the pattern ÷ all tokens with the pattern.',S(R([tl('p','P','var',1.2),tl('e','=','op',.6),tl('n','V1,m','stem',2),tl('s','÷','op',.6),tl('d','Nm','aff',1.6)],'category-conditioned')),'A hapax legomenon occurs only once in a corpus; in a large corpus hapaxes can be assumed to be occasionalisms. P is the chance that a random word of the pattern is one.'],
+   ['(vi) P*','Hapaxes with the pattern ÷ all hapaxes in the corpus.',S(R([tl('p','P*','var',1.4),tl('e','=','op',.6),tl('n','V1,m','stem',2),tl('s','÷','op',.6),tl('d','V1','aff',1.4)],'hapax-conditioned')),'It shows how much the pattern contributes to the growth of the vocabulary at a given moment, with no historical dictionary needed.']];
+  const chips=el('div','chips'),host=el('div','stage'),rule=el('div','res'),note=el('p','hint');box.append(chips,host,rule,note);const st=new Stage(host);
+  M.forEach(m=>{const b=el('button','chip',m[0]);b.onclick=()=>{[...chips.children].forEach(x=>x.classList.remove('on'));b.classList.add('on','done');st.set(m[2]);rule.innerHTML=`<b>${m[1]}</b>`;note.innerHTML=m[3];};chips.append(b);});
+  chips.children[0].click();
+}
+
+/* ---------- Hapax toy corpus ---------- */
+function hapaxWidget(box){
+  const P={'-less':{w:{childless:6,joyless:1,shoeless:1,commaless:1,careless:9}},'-ment':{w:{investment:8,harassment:5,fulfilment:4,enjoyment:7,endorsement:2}}};
+  const init=JSON.stringify(P);let S0=JSON.parse(init);const OTHER=90;
+  const wrap=el('div'),out=el('div','res');box.append(el('p','hint','An invented toy corpus: tap a word to add one more occurrence of it.'),wrap,out);
+  function draw(){wrap.innerHTML='';let tot=OTHER;const res=[];
+    Object.keys(S0).forEach(k=>{const w=S0[k].w;const ty=Object.keys(w).length,v1=Object.values(w).filter(x=>x===1).length,N=Object.values(w).reduce((a,b)=>a+b,0);S0[k].v1=v1;S0[k].N=N;S0[k].ty=ty;tot+=v1;});
+    Object.keys(S0).forEach(k=>{wrap.append(el('p','gl',`${k} words`));const ch=el('div','chips');
+      Object.entries(S0[k].w).forEach(([w,n])=>{const b=el('button','chip'+(n===1?' on':''),`${w} × ${n}`);b.onclick=()=>{S0[k].w[w]++;draw();};ch.append(b);});wrap.append(ch);
+      const d=S0[k];res.push(`<li><b>${k}</b>: ${d.ty} types, ${d.N} tokens, <b>${d.v1}</b> hapax${d.v1===1?'':'es'} → P = ${d.v1}/${d.N} = <b>${(d.v1/d.N).toFixed(3)}</b> · P* = ${d.v1}/${tot} = <b>${(d.v1/tot).toFixed(3)}</b></li>`);});
+    out.innerHTML=`Highlighted words are hapaxes (one occurrence). The rest of the corpus has ${OTHER} other hapaxes, so V1 = ${tot}.<ul class="pts">${res.join('')}</ul><small>Both patterns have the same number of types (5), yet different productivity: type frequency is not productivity.</small>`;}
+  const rs=el('button','btn ghost','Reset');rs.onclick=()=>{S0=JSON.parse(init);draw();};box.append(rs);draw();
+}
+
+/* ---------- P* calculator ---------- */
+function calcWidget(box){
+  const inp=(l,v)=>{const w=el('div');w.append(el('p','gl',l));const i=el('input');i.type='number';i.min='0';i.value=v;i.inputMode='decimal';w.append(i);return [w,i];};
+  const chips=el('div','chips'),a=inp('Hapaxes with the pattern (V1,m)',44),b=inp('All hapaxes in the corpus (V1)',5133),c=inp('Tokens with the pattern (Nm), optional for P','');
+  const res=el('div','res');
+  const p1=el('button','chip on','-stvo · Russian'),p2=el('button','chip','-ost’ · Russian');chips.append(p1,p2);
+  box.append(chips,a[0],b[0],c[0],res);
+  const run=()=>{const v=+a[1].value,V=+b[1].value,N=+c[1].value;let h=`<b>P*</b> = ${v} ÷ ${V} = <b>${V>0?(v/V).toPrecision(2):'–'}</b>`;
+    if(N>0)h+=`<br><b>P</b> = ${v} ÷ ${N} = <b>${(v/N).toPrecision(2)}</b>`;
+    h+=`<br><small>Russian frequency dictionary: -stvo 44 and -ost’ 118 of the 5,133 least frequent words. The book rounds the comparison to about two and a half times.</small>`;res.innerHTML=h;};
+  [a[1],b[1],c[1]].forEach(i=>i.addEventListener('input',run));
+  p1.onclick=()=>{a[1].value=44;p1.classList.add('on');p2.classList.remove('on');run();};
+  p2.onclick=()=>{a[1].value=118;p2.classList.add('on');p1.classList.remove('on');run();};
+  run();
+}
+
+/* ---------- Greek exercise ---------- */
+function greekWidget(box){
+  const D=[['djavázo','‘I read’',3,'djávasma','-ma'],['kóvo','‘I cut’',2,'kópsimo','-simo'],['lúzo','‘I bathe’',2,'lúsimo','-simo'],['mangóno','‘I squeeze’',3,'mángoma','-ma'],
+    ['pjáno','‘I seize’',2,'pjásimo','-simo'],['skondáfto','‘I stumble’',3,'skóndama','-ma'],['tinázo','‘I shake’',3,'tínama','-ma'],['tréxo','‘I run’',2,'tréksimo','-simo']];
+  const chips=el('div','chips'),host=el('div','stage'),res=el('div','res','Tap each verb and look for what decides between -simo and -ma.');
+  const rv=el('button','btn','Reveal a generalization'),gen=el('div','res');gen.hidden=true;
+  box.append(chips,host,res,rv,gen);const st=new Stage(host);
+  D.forEach(([v,g,n,noun,sfx])=>{const c=el('button','chip',v);
+    c.onclick=()=>{[...chips.children].forEach(x=>x.classList.remove('on'));c.classList.add('on','done');
+      st.set(S(R([tl('v',v,'stem',wd(v),{sub:n+' syl.'})],'verb '+g),R([tl('n',noun,sfx==='-ma'?'aff':'mod',wd(noun),{from:'v'})],'action noun, suffix '+sfx)));
+      res.className='res';res.innerHTML=`<span class="w">${v}</span> has <b>${n}</b> syllables → <span class="w">${noun}</span> (${sfx}).`;};
+    chips.append(c);});
+  rv.onclick=()=>{gen.hidden=false;gen.className='res good';gen.innerHTML='In all eight verbs, <b>two-syllable verbs take -simo</b> and <b>three-syllable verbs take -ma</b>. The two suffixes are both productive but divide the verbs by length. <small>This is my reading of the data; the exercise asks you to find the rule yourself.</small>';};
+}
+
+/* ---------- Summary ---------- */
+function summaryWidget(box){
+  box.append(el('ul','pts',`
+   <li><b>Productivity</b> is the extent to which a rule can form new words, and it is part of speakers’ <b>competence</b>, not just performance or history.</li>
+   <li>It is <b>gradient</b>, not a split between “productive” and “creative”: the less productive a rule, the more a neologism is noticed.</li>
+   <li><b>Restrictions</b> on a rule’s domain can be phonological, semantic, pragmatic or morphological, or depend on a borrowed vocabulary stratum.</li>
+   <li><b>Lexicon effects:</b> affixes in decomposed words gain memory strength; frequent words block synonyms; lexical gangs and patterns dense in a sound neighbourhood act as analogical models.</li>
+   <li><b>Measures:</b> type frequency, possible words, exhaustion, neologisms over time, and the hapax-based <b>P</b> and <b>P*</b>.</li>`));
+  let tot=0,good=0;const rows=[];
+  SECTIONS.forEach(s=>{let n=0,g=0;s.steps.forEach(st=>{if(st.type==='quiz')st.qs.forEach(q=>{n++;if(app.score[q.id])g++;});});
+    if(n){tot+=n;good+=g;rows.push(`<li>${s.title}: <b>${g}/${n}</b></li>`);}});
+  box.append(el('p','res',`<b>Quiz results (first try): ${good} of ${tot}</b><ul class="pts">${rows.join('')}</ul>`));
+}
+
+/* ---------- Quizzes ---------- */
+const Q={
+ p1:mq('p1','A morphological rule is productive if…','It can be applied to new bases to form new words',['It applies to every possible base','It has many existing words','It has no restrictions at all'],'Productivity is about forming new words, and it is a matter of degree.'),
+ p2:mq('p2','Why do many linguists treat productivity as part of competence, not just performance?','Speakers agree *helpnessful and *frownity are impossible, so they know which patterns can be used',['Productivity concerns only language change','Neologisms never occur in speech','Performance cannot be studied'],'Judgements like these are routinely used to study competence.'),
+ p3:mq('p3','English -let (streamlet, piglet) could attach to many monosyllabic concrete nouns but rarely forms new words. What does this show?','Productivity is not the same as unrestrictedness',['-let is highly productive','-let has a hidden restriction nobody has found','Diminutives are inflectional'],'Domain width and productivity are different things (compare unrestricted -ness).'),
+ c1:mq('c1','What is the book’s main objection to a sharp split between “productive” and “creative” rules?','We cannot know speakers’ intentions, and many rules give neologisms that are neither unremarkable nor striking',['Creative words do not exist','All rules are equally productive','Poets never coin words'],'Even mentalese was shaped by an unconscious stress preference, so conscious vs unconscious is not clean.'),
+ c2:mq('c2','Thurber’s kissgranny (from the unproductive V+N type killjoy) is an example of…','Poetic licence: a novel word from an unproductive pattern',['A productive formation','A hapax in every corpus','A blocked word'],'Such coinages show that readers can recognise the structure of unproductive patterns.'),
+ c3:mq('c3','On the book’s view, productivity is…','Gradient: the less productive the rule, the likelier a neologism is noticed',['All or nothing','Identical to creativity','Only a historical process'],'-ese neologisms strike us more than -less neologisms.'),
+ r1:mq('r1','Spanish *gallillo (from gallo): which kind of restriction?','Phonological: the suffix avoids repeating the sound ll',['Semantic','Pragmatic','Morphological'],'Repetition of identical features is a common phonological restriction.'),
+ r2:mq('r2','German *Bäumin ‘female tree’: which kind of restriction?','Semantic: trees do not have gender',['Phonological','Morphological','Borrowed stratum'],'The meaning of -in is incompatible with the meaning of the base.'),
+ r3:mq('r3','German ?Käferin ‘female beetle’ is disliked because…','It is not useful to distinguish male and female beetles (pragmatic)',['The word is too long','Käfer is a loanword','-in only attaches to verbs'],'A neologism has to be useful as well as well-formed.'),
+ r4:mq('r4','Hebrew katav ‘write’ gives no *kituv, though diber gives dibur. Which restriction?','Morphological: the pattern needs verbs of one inflection class',['Phonological','Semantic','Pragmatic'],'The action-noun pattern CiC(C)uC applies only to CiC(C)eC verbs.'),
+ r5:mq('r5','English *brittality (from brittle) fails because…','-ity is mostly restricted to Latinate bases and brittle is Germanic',['-ity needs a verb','Brittle is too long','-ity is a prefix'],'Borrowed vocabulary strata restrict affixes borrowed along with the words.'),
+ l1:mq('l1','Why is modernity likely to be decomposed while security is likely stored whole?','Modernity is less frequent than modern, but security is more frequent than secure',['Modernity is shorter','Security has no base','-ity attaches only to verbs'],'When the complex word is rarer than its base, the parts route wins.'),
+ l2:mq('l2','A high parsing ratio for an affix suggests…','Its words are often processed via their parts, so the affix has strong memory strength and tends to be more productive',['Its words are stored whole','The affix is a prefix','The affix is borrowed'],'The correlation is imperfect (-like is an outlier) but real.'),
+ l3:mq('l3','Synonymy blocking means…','An existing word with the same meaning pre-empts a potential new one (to sweep blocks *to broom)',['Two words may never share a base','A suffix is blocked by a prefix','Borrowed words block native ones'],'It is also limited by frequency of the blocking word.'),
+ l4:mq('l4','Why is *coraggiosità blocked while maliziosità exists?','The blocking noun coraggio is very frequent (52.7); malizia has frequency 0 in the corpus',['Coraggioso is a loanword','-ità is unproductive','Malizioso is a verb'],'Frequent words have greater memory strength and block more strongly.'),
+ l5:mq('l5','Why can the i/u past-tense pattern (fling/flung) act as an analogical model despite covering fewer than two dozen verbs?','It dominates among verbs with a similar sound shape: a lexical gang',['It is more frequent than -ed overall','It is a prefix','It only applies to new verbs'],'Seven of thirteen verbs of the shape /(s)C(C)ɪŋ/ have it, so it is strong in that neighbourhood.'),
+ m1:mq('m1','Why is type frequency not the same as productivity?','English -ment has hundreds of words but is rarely used for new ones, while -ese has few words but is used freely',['Types and tokens are identical','Dictionaries do not list types','Productive patterns have few words'],'Existing words show history; productivity shows ongoing creation.'),
+ m2:mq('m2','The measure P = V1,m ÷ Nm divides…','Hapaxes with the pattern by all tokens with the pattern',['Hapaxes with the pattern by all hapaxes','All words by all patterns','Possible words by actual words'],'It is the chance that a word of the pattern, picked at random from the corpus, is an occasionalism.'),
+ m3:mq('m3','The measure P* = V1,m ÷ V1 divides…','Hapaxes with the pattern by all hapaxes in the corpus',['Hapaxes with the pattern by tokens of the pattern','Types by tokens','Actual words by possible words'],'It shows how much the pattern contributes to the growth of the vocabulary.'),
+ m4:mq('m4','Why do hapax legomena indicate productivity?','In a large corpus they are mostly occasionalisms, and productive rules produce occasionalisms',['They are always errors','They are the most frequent words','Unproductive rules produce more of them'],'This is the idea behind both P and P*.'),
+ x1:mq('x1','Exercise 1: *bountifulity, *aimlessity, *darkishity (but electricity, probability). Which restriction best fits -ity?','Morphological: -ity avoids bases that already end in certain suffixes (the book names -ish, -y, -ful)',['Phonological only','Pragmatic','Semantic only'],'It prefers bases like electric, probable, captive: suffixes of Latinate origin, so the borrowed stratum matters too.'),
+ x2:mq('x2','Exercise 2: why are *reknow and *happytarian odd although re- and -(t)arian are productive?','Their meanings limit the bases: re- needs an event that can be repeated, -(t)arian a noun for a doctrine or ideology',['They are phonologically too long','Both affixes are unproductive','They are blocked by synonyms'],'This is my reading: a semantic restriction on the domain.'),
+ x5:mq('x5','Exercise 5: how did -scape (landscape, seascape, skyscape) come into being?','By analogy: speakers reanalysed land + scape and extended the second part to new words',['By borrowing from Latin','By sound change','By conversion'],'The same story holds for -(er)ati from literati: a word-schema extended by analogy.')
+};
+
+const SECTIONS=[
+{title:'What is productivity?',steps:[
+ {type:'stage',cap:`A rule is <b>productive</b> to the extent that it can be applied to <b>new bases</b> to form <b>new words</b>. With a very productive rule, nobody even notices the neologism.`,
+  spec:S(R([tl('a','comma','stem',2.8),tl('b','less','aff',1.8,{enter:'right'})],'commaless: “the poet writes in long, commaless sentences”'))},
+ {type:'stage',cap:`Some say productivity belongs to performance, or only to language change. But every speaker agrees these hypothetical words are impossible. That suggests productivity is part of what speakers <b>know</b>.`,
+  spec:S(R([tl('a','*helpnessful','bad',6.2)],'suffixes in the wrong order'),R([tl('b','*frownity','bad',4.8)],'-ity on a verb'))},
+ {type:'stage',cap:`Others equate productivity with how <b>restricted</b> a rule is. But the two come apart. -ness takes almost any adjective and is productive. -en takes only monosyllabic adjectives. -let could take many nouns, yet is rarely used.`,
+  spec:S(R([tl('a1','-ness','aff',1.9),tl('a2','almost any adjective','plain',4.6),tl('a3','productive','ok',3)],''),R([tl('b1','-en','aff',1.5),tl('b2','monosyllabic only','plain',4.6),tl('b3','productive','ok',3)],''),R([tl('c1','-let','aff',1.5),tl('c2','many nouns','plain',4.6),tl('c3','rarely used','bad',3)],'wide domain, yet not productive'))},
+ {type:'quiz',cap:'Quick check.',qs:[Q.p1,Q.p2,Q.p3]}
+]},
+{title:'Productive or creative?',steps:[
+ {type:'widget',cap:`Some linguists separate <b>productive</b> rules (unconscious coinage) from <b>creative</b> ones (intentional). Try five patterns from the least to the most noticed.`,
+  build:b=>labWidget(b,PRODEX,'Coin a new word','Undo')},
+ {type:'stage',cap:`The split is hard to defend. The philosopher who coined <b>mentalese</b> acted deliberately, yet -ese has an unconscious preference for a strong–weak–strong stress. Thoughtese or mindese would not fit.`,
+  spec:S(R([tl('a','mentalese','ok',5)],'mèntalése: strong–weak–strong'),R([tl('b','thoughtese','ghost',5.4)],'thòughtése: would not fit the pattern'))},
+ {type:'quiz',cap:'Check yourself.',qs:[Q.c1,Q.c2,Q.c3]}
+]},
+{title:'Restrictions on rules',steps:[
+ {type:'stage',cap:`A rule’s <b>domain</b> is the set of bases it can apply to. Five kinds of restriction narrow it: phonological, semantic, pragmatic, morphological and borrowed-stratum.`,
+  spec:S(R([tl('a','phonological','stem',3.8),tl('b','semantic','stem',3)],''),R([tl('c','pragmatic','stem',3.2),tl('d','morphological','stem',4)],''),R([tl('e','borrowed stratum','stem',5)],''))},
+ {type:'widget',cap:`Explore examples of each kind. In each case the base is turned into a new word, or blocked.`,build:restrictWidget},
+ {type:'quiz',cap:'Which kind of restriction?',qs:[Q.r1,Q.r2,Q.r3,Q.r4,Q.r5]}
+]},
+{title:'Productivity and the lexicon',steps:[
+ {type:'stage',cap:`Productivity depends partly on <b>processing</b>. Patterns whose words are often decomposed keep their affix in frequent use, giving it strong <b>memory strength</b>. Relative frequency decides: modernity is rarer than modern…`,
+  spec:S(R([tl('m1','modern','stem',2.8),tl('m2','-ity','aff',1.6)],'modernity: built from its parts'))},
+ {type:'stage',cap:`…but security is more frequent than secure, so it is stored whole, bypassing the affix.`,
+  spec:S(R([tl('s1','security','lex',4)],'security: stored whole'))},
+ {type:'stage',cap:`The <b>parsing ratio</b> is the share of an affix’s words that are decomposed. For -ity it is 0.17: about 17% decomposed, 83% stored. That fits -ity not being very productive.`,
+  spec:S(R([tl('d','17%','stem',1.5),tl('s','83%','lex',7.5)],'-ity words: decomposed vs stored'))},
+ {type:'widget',cap:`Compare parsing ratios with productivity for nine English suffixes (Hay and Baayen’s figures).`,build:parseWidget},
+ {type:'stage',cap:`<b>Synonymy blocking</b>: an existing word with the meaning pre-empts a possible new one. It does not matter whether the blocking word is related.`,
+  spec:S(R([tl('a1','*to broom','bad',3.8),tl('a2','→','op',.8),tl('a3','to sweep','ok',3.2)],''),R([tl('b1','*typer','bad',3.2),tl('b2','→','op',.8),tl('b3','typist','ok',3.2)],''),R([tl('c1','*goodly','bad',3.2),tl('c2','→','op',.8),tl('c3','well','ok',2.4)],''))},
+ {type:'widget',cap:`Blocking has exceptions, and <b>frequency</b> explains many. In Italian, -ità normally makes quality nouns from adjectives in -oso. Check each one.`,build:blockWidget},
+ {type:'widget',cap:`<b>Analogy</b>: a new word is formed on the model of existing ones. Solve the proportional equations.`,
+  build:b=>labWidget(b,ANAEX,'Solve for X','Back')},
+ {type:'widget',cap:`Why can fling/flung beat -ed? Because verbs of a similar sound shape form a <b>lexical gang</b>: seven of thirteen /(s)C(C)ɪŋ/ verbs take i/u. Try verbs in and out of the gang.`,
+  build:b=>labWidget(b,gangExamples(),'Form the past tense','Back')},
+ {type:'quiz',cap:'Check yourself.',qs:[Q.l1,Q.l2,Q.l3,Q.l4,Q.l5]}
+]},
+{title:'Measuring productivity',steps:[
+ {type:'stage',cap:`Acceptability judgements are less reliable for words than for sentences: <b>eyed</b> sounds odd until a context makes it natural. So morphologists mostly study actual words. Six measures have been proposed, and they measure different things.`,
+  spec:S(R([tl('a','bearded','ok',3.2),tl('b','winged','ok',2.8)],''),R([tl('c','eyed','ghost',2.4),tl('d','?','op',.8),tl('e','odd, but fine for cave bugs','plain',7)],''))},
+ {type:'widget',cap:`The six measures. Tap each for the idea and its weakness.`,build:measuresWidget},
+ {type:'widget',cap:`Hapaxes in action. Both patterns below have five word types, but very different productivity. Add occurrences and watch P and P* change.`,build:hapaxWidget},
+ {type:'widget',cap:`Calculate it yourself. These are the numbers from the exploratory exercise: -ost’ is about two and a half times as productive as -stvo by P*.`,build:calcWidget},
+ {type:'quiz',cap:'Check yourself.',qs:[Q.m1,Q.m2,Q.m3,Q.m4]}
+]},
+{title:'Exercises',steps:[
+ {type:'quiz',cap:`Questions based on the comprehension exercises.`,qs:[Q.x1,Q.x2,Q.x5]},
+ {type:'widget',cap:`Exercise 3: Modern Greek has two productive action-noun suffixes, -simo and -ma, in complementary domains. What decides which one? Tap through the data.`,build:greekWidget},
+ {type:'widget',cap:`Exercise 4: block or not? Sort these impossible words. A few are my own analysis, since the book leaves the answers open.`,
+  build:b=>sort3Widget(b,[['*foots','block','Blocked by the existing plural feet, which has the same meaning.'],['*certainness','block','Blocked by certainty, an existing noun with the same meaning (my analysis, following the Italian pattern).'],
+   ['*slickize','other','Phonological: slick ends in a stressed syllable, like *securize, and -ize wants a strong–weak rhythm.'],['*teacheress','other','-ess is an unproductive suffix, so nothing blocks it: it simply is not used.'],['*musting','other','Must has no -ing form: a gap, not blocking by another word (my analysis).']],
+   {block:'Synonymy blocking',other:'Another reason'})},
+ {type:'widget',cap:`That is chapter 6. Here is what to take away.`,build:summaryWidget}
+]}
+];
+
+var PRODEX=[
+ {name:'-less',lang:'Highly productive',desc:`<span class="w">commaless</span>: “the poet writes in long, commaless sentences.” Hardly anyone notices a new word like this.`,
+  a:S(R(T('comma','c'),'base')),b:S(R([...T('comma','c'),tl('l','less','aff',2,{enter:'right'})],'commaless'))},
+ {name:'-ize',lang:'Productive, often conscious',desc:`<span class="w">pronominalize</span>, transistorize, multimerize. The suffix often forms new words, so it is hardly unproductive, but many are deliberate technical coinages.`,
+  a:S(R([tl('p','pronominal','stem',5.8)],'base')),b:S(R([tl('p','pronominal','stem',5.8),tl('z','ize','aff',2,{enter:'right'})],'pronominalize'))},
+ {name:'-ese',lang:'Less productive',desc:`<span class="w">mentalese</span>: motherese, computerese, translationese. New -ese words strike us as new.`,
+  a:S(R([tl('p','mental','stem',3.6)],'base')),b:S(R([tl('p','mental','stem',3.6),tl('z','ese','aff',2,{enter:'right'})],'mentalese'))},
+ {name:'killjoy',lang:'Unproductive V+N · poetic licence',desc:`<span class="w">killjoy</span> is an existing word of an unproductive type, yet J. Thurber wrote <span class="w">kissgranny</span> and G. M. Hopkins <span class="w">daredeath</span>.`,
+  a:S(R([tl('k1','kill','stem',2.2),tl('k2','joy','stem',2)],'existing word')),b:S(R([tl('k1','kiss','mod',2.2),tl('k2','granny','mod',3)],'poetic licence: kissgranny'))},
+ {name:'-ač',lang:'Unproductive · Russian',desc:`<span class="w">trubač</span> ‘trumpeter’ from truba. Yet Mayakovsky created <span class="w">stixač</span> ‘verse-maker’ and Khlebnikov <span class="w">smexač</span> ‘laugher’.`,
+  a:S(R([tl('t1','trub','stem',2.2),tl('t2','-ač','aff',1.6)],'trubač ‘trumpeter’')),b:S(R([tl('t1','stix','mod',2.2),tl('t2','-ač','mod',1.6)],'stixač ‘verse-maker’ (Mayakovsky)'))}
+];
+var ANAEX=[
+ {name:'fling',lang:'Analogical extension · English',desc:`<span class="w">sting : stung = fling : X</span> → <b>flung</b>. Fling once had the past flinged, then moved to the i/u pattern.`,
+  a:S(R([tl('a1','sting','stem',2),tl('a2',':','op',.5),tl('a3','stung','stem',2),tl('a4','=','op',.7),tl('a5','fling','stem',2),tl('a6',':','op',.5),tl('X','X','var',1.2)],'proportional equation')),
+  b:S(R([tl('a1','sting','stem',2),tl('a2',':','op',.5),tl('a3','stung','stem',2),tl('a4','=','op',.7),tl('a5','fling','stem',2),tl('a6',':','op',.5),tl('X','flung','mod',2)],'X = flung'))},
+ {name:'pan',lang:'Analogical extension · Polish',desc:`<span class="w">syn : synowie = pan : X</span> → <b>panowie</b>. The plural -owie spread from a few u-declension nouns to many male-human nouns.`,
+  a:S(R([tl('a1','syn','stem',1.8),tl('a2',':','op',.5),tl('a3','synowie','stem',3),tl('a4','=','op',.7),tl('a5','pan','stem',1.8),tl('a6',':','op',.5),tl('X','X','var',1.2)],'proportional equation')),
+  b:S(R([tl('a1','syn','stem',1.8),tl('a2',':','op',.5),tl('a3','synowie','stem',3),tl('a4','=','op',.7),tl('a5','pan','stem',1.8),tl('a6',':','op',.5),tl('X','panowie','mod',3)],'X = panowie'))},
+ {name:'wash',lang:'Derivational analogy · English',desc:`<span class="w">change : changeable = wash : X</span> → <b>washable</b>. Adjectives in -able spread from French loans to native verbs.`,
+  a:S(R([tl('a1','change','stem',2.6),tl('a2',':','op',.5),tl('a3','changeable','stem',4.2),tl('a4','=','op',.7),tl('a5','wash','stem',2.2),tl('a6',':','op',.5),tl('X','X','var',1.2)],'proportional equation')),
+  b:S(R([tl('a1','change','stem',2.6),tl('a2',':','op',.5),tl('a3','changeable','stem',4.2),tl('a4','=','op',.7),tl('a5','wash','stem',2.2),tl('a6',':','op',.5),tl('X','washable','mod',3.4)],'X = washable'))}
+];
+Lesson.start({label:'Chapter 6 · Productivity',sections:SECTIONS});
+
+</script>
+</body>
+</html>
