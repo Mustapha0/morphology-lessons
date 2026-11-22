@@ -1,1 +1,265 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>Chapter 2 · Basic concepts · Understanding Morphology</title>
+<link rel="stylesheet" href="../assets/lesson.css">
+</head>
+<body>
+<script src="../assets/lesson.js"></script>
+<script>
+const {el,seg,T,tl,R,S,chg,mark,strip,shuffle,Stage,app,quizWidget,labWidget,sort3Widget}=Lesson;
+const W=t=>Math.max(1,t.length*0.5+0.4);
+const tw=(id,t,k='stem',x={})=>tl(id,t,k,W(t),x);
+const L=(s,p,k='stem')=>Array.from(s).map((c,i)=>tl(p+i,c,k,1));
 
+/* Object row + gloss row, columns aligned. list = [[object, gloss, kind], ...] */
+function glossRows(list){
+  const a=[],b=[];
+  list.forEach(([o,g,k],i)=>{const w=Math.max(W(o),W(g)*0.9);
+    a.push(tl('o'+i,o,k||'stem',w));b.push(tl('g'+i,g,'plain',w,{enter:'bottom'}));});
+  return {a,b};
+}
+
+/* ---------- Widget: paradigm tables (Greek filos, Latin insula) ---------- */
+function paradigmWidget(box){
+  const P=[
+   {n:'Greek filos ‘friend’',rows:[['nominative','fílos','fíli'],['accusative','fílo','fílus'],['genitive','fílu','fílon']]},
+   {n:'Latin insula ‘island’',rows:[['nominative','insula','insulae'],['accusative','insulam','insulās'],['genitive','insulae','insulārum'],['dative','insulae','insulīs'],['ablative','insulā','insulīs']]}];
+  const tabs=el('div','tabs'),holder=el('div'),res=el('div','res');
+  box.append(tabs,holder,res);
+  const tbs=P.map((p,i)=>{const c=el('button','chip',p.n);c.onclick=()=>draw(i);tabs.append(c);return c;});
+  function draw(i){
+    tbs.forEach((c,j)=>c.classList.toggle('on',j===i));
+    const p=P[i];holder.innerHTML='';
+    const t=el('table','tb');t.innerHTML='<tr><th></th><th>singular</th><th>plural</th></tr>';
+    const cells=[];
+    p.rows.forEach(r=>{const tr=el('tr');tr.append(el('td','',`<small>${r[0]}</small>`));
+      [1,2].forEach(k=>{const td=el('td','',r[k]);td.style.cursor='pointer';td.dataset.f=r[k];td.dataset.fn=r[0]+(k===1?' singular':' plural');
+        td.onclick=()=>pick(td);cells.push(td);tr.append(td);});t.append(tr);});
+    holder.append(t);
+    const n=cells.length,d=new Set(cells.map(c=>c.dataset.f)).size;
+    function pick(td){
+      cells.forEach(c=>{c.style.background=(c.dataset.f===td.dataset.f)?'color-mix(in srgb,var(--var) 22%,transparent)':'';});
+      const same=cells.filter(c=>c.dataset.f===td.dataset.f);
+      res.innerHTML=same.length>1
+        ?`<b>${td.dataset.f}</b> fills ${same.length} cells: ${same.map(c=>c.dataset.fn).join(' and ')}. Same sounds, different grammatical functions, so these are different word-forms.`
+        :`<b>${td.dataset.f}</b> expresses just one set of functions: ${td.dataset.fn}.`;
+    }
+    res.innerHTML=`This paradigm has <b>${n}</b> sets of grammatical functions, so <b>${n} word-forms</b>, but only <b>${d}</b> different sound sequences. Tap a form.`;
+  }
+  draw(1);
+}
+
+/* ---------- Widget: how to read a gloss ---------- */
+function glossRulesWidget(box){
+  const ul=el('ul','pts');
+  [['1','<b>One-to-one.</b> Each element of the example is translated by one element of the gloss. Hyphens separate morphemes in both lines, and the two lines are aligned at the left.'],
+   ['2','<b>Value labels.</b> Grammatical elements are not translated but replaced by abbreviated labels (nom, acc, pst, pl…), usually in small capitals.'],
+   ['3','<b>Periods</b> join several gloss elements that match one element of the example: a multi-word translation (come.out), several meanings in one affix (gen.pl), or a meaning that cannot be segmented (fig.pl).'],
+   ['3b','<b>Person and number</b> go together as 1sg, with no period, because they combine so often.'],
+   ['4','<b>Simplifying.</b> When the morpheme division does not matter, periods can be used throughout: bloom.caus.pst. In running text, put the gloss in [square brackets].']]
+  .forEach(([a,b])=>ul.append(el('li','',`<span class="pill">${a}</span>${b}`)));
+  box.append(ul);
+}
+
+/* ---------- Questions ---------- */
+const Q={
+ ms1:{id:'ms1',q:'Which of these is monomorphemic?',o:['unfriendly','chameleon','readable','nuts'],a:1,
+  w:'Cha/meleon gives no meaningful parts: meleon occurs nowhere else, and cha- in charisma, Canadian… shares no meaning with it.'},
+ ms2:{id:'ms2',q:'How many morphemes are in un-happi-ness?',o:['1','2','3','4'],a:2,w:'un-, happi- and -ness.'},
+ lx1:{id:'lx1',q:'How many word-forms does the Latin paradigm of insula have?',o:['5','7','10','12'],a:2,
+  w:'Seven different sequences of sounds, but ten different sets of grammatical functions. Genitive singular and nominative plural are different word-forms that sound alike.'},
+ lx2:{id:'lx2',q:'Live, lives, lived and living are…',o:['Four lexemes','Word-forms of one lexeme','One word token','Derived from each other'],a:1,
+  w:'They are concrete forms in the paradigm of the lexeme LIVE, the item a dictionary lists once.'},
+ lx3:{id:'lx3',q:'The lexeme firewood belongs to which word families?',o:['Only fire','Only wood','Both fire and wood','Neither'],a:2,
+  w:'That relation is called compounding.'},
+ lx4:{id:'lx4',q:'Why does a dictionary give reader its own entry but not reads?',
+  o:['Reads is rare','Complex lexemes denote new, less predictable concepts, while word-forms are mostly predictable','Reader is longer','Dictionaries ignore inflection by accident'],a:1,
+  w:'A reader can be a person who reads, but also an academic position or a kind of book. That cannot be predicted from read, so it must be listed.'},
+ af1:{id:'af1',q:'In readability, the root is…',o:['read','readable','-able','-ity'],a:0,
+  w:'Read cannot be analysed further. Readable is the base for -ity, but it is not a root.'},
+ af2:{id:'af2',q:'Italian gatt- (in gatt-i ‘cats’) is…',o:['A prefix','A bound stem','An infix','A suffix'],a:1,
+  w:'It is the base, but it cannot stand alone as a word-form: Italian nouns must carry a number ending.'},
+ af3:{id:'af3',q:'Tagalog s-um-ulat from sulat ‘write’ shows…',o:['A circumfix','A prefix','An infix','A suffix'],a:2,w:'-um- sits inside the base.'},
+ af4:{id:'af4',q:'What is a base?',o:['Always a root','The part an affix attaches to; it can itself be complex','Always a free word','The longest affix'],a:1,
+  w:'Base is a relative notion defined against affixes. In activity, active is the base of -ity and act is the base of -ive.'},
+ al1:{id:'al1',q:'English plural [s], [z] and [əz] are…',o:['Three different morphemes','Allomorphs of one plural morpheme','Roots','Suppletive allomorphs'],a:1,
+  w:'Same meaning, complementary distribution, and similar shapes: phonological allomorphs.'},
+ al2:{id:'al2',q:'go → wen-t is an example of…',o:['Phonological allomorphy','Strong suppletion','Weak suppletion','No allomorphy'],a:1,w:'The stem shapes share no form at all.'},
+ al3:{id:'al3',q:'In the surface form [taːk] ‘day’, the final k comes from underlying g because…',
+  o:['A rule makes voiced obstruents voiceless in syllable-final position','German has no g','The plural is different','Suppletion'],a:0,
+  w:'In the plural [taːgə], g is no longer syllable-final, so the rule does not apply.'},
+ al4:{id:'al4',q:'Persian plural -an (human nouns) vs -ha (non-human nouns) is…',o:['Phonological conditioning','Lexical conditioning','Morphological conditioning only','No conditioning'],a:1,
+  w:'The choice depends on properties of the individual base word, here its meaning.'},
+ gl1:{id:'gl1',q:'In insul-ārum island-gen.pl, why is gen.pl joined by a period?',
+  o:['One morpheme expresses two meanings at once','It is a mistake','Latin has no hyphen','It marks a prefix'],a:0,w:'-ārum expresses genitive and plural together, and they cannot be segmented.'},
+ gl2:{id:'gl2',q:'Why is it written 1sg and not 1.sg?',o:['Person and number combine so often that the period is felt to be redundant','1 is not a number','Because it is a suffix','It is a typo'],a:0,
+  w:'This is the convention stated in the Appendix to Chapter 2.'},
+ gl3:{id:'gl3',q:'Albanian fik → fiq is glossed fig.sg → fig.pl. The period is there because…',
+  o:['The number is expressed in a way that cannot be segmented','Albanian has no plural','fik is a suffix','Hyphens are banned'],a:0,w:'There is no separate piece to which pl can be assigned, so the two meanings are joined by a period.'}
+};
+
+/* ---------- Lesson ---------- */
+const SECTIONS=[
+ {title:'Morphemes',steps:[
+  {type:'stage',cap:'Often form and meaning line up neatly. In these words, parts of words bear different meanings, so the words can be <b>segmented</b>.',
+   spec:S(R([tw('a','read','stem'),tl('b','s','aff',1)],'read-s'),R([tw('c','read','stem'),tw('d','er','aff')],'read-er'),R([tw('e','read','stem'),tw('f','able','aff')],'read-able'))},
+  {type:'stage',cap:'The parts are <b>morphemes</b>: the smallest meaningful constituents of a linguistic expression. A word can have more than two: un-happi-ness.',
+   spec:S(R([tw('u','un','aff'),tw('h','happi','stem'),tw('n','ness','aff')],'un-happi-ness: three morphemes'))},
+  {type:'stage',cap:'You can divide a phrase in different ways, but only down to morphemes. <b>An unfriendly chameleon</b> can be cut at word level…',
+   spec:S(R([tw('p1','an','plain'),tw('p2','unfriendly','plain'),tw('p3','chameleon','plain')],'words'))},
+  {type:'stage',cap:'…and <i>unfriendly</i> can be cut further into un + friend + ly.',
+   spec:S(R([tw('p1','an','plain'),tw('q1','un','aff'),tw('q2','friend','stem'),tw('q3','ly','aff'),tw('p3','chameleon','plain')],'morphemes'))},
+  {type:'stage',cap:'But <b>chameleon</b> cannot be cut. Cha- and meleon carry no meanings of their own (compare charisma, Canadian, caboodle). It is <b>monomorphemic</b>: a morphological atom.',
+   spec:S(R([tw('p1','an','plain'),tw('q1','un','aff'),tw('q2','friend','stem'),tw('q3','ly','aff'),tw('r1','cha','bad',{from:'p3'}),tw('r2','meleon','bad',{from:'p3'})],'cha + meleon: no meaning for either part'))},
+  {type:'widget',cap:'Cut the words into morphemes. Which one refuses?',
+   build:box=>labWidget(box,(()=>{
+     const D=[
+      ['unfriendliness',['un','friend','li','ness'],['aff','stem','aff','aff'],'Four morphemes.'],
+      ['hopelessness',['hope','less','ness'],['stem','aff','aff'],'Three morphemes.'],
+      ['earplugs',['ear','plug','s'],['stem','stem','aff'],'Three morphemes: two roots and a plural.'],
+      ['rewriting',['re','writ','ing'],['aff','stem','aff'],'Three morphemes. The root shows up as writ- here and write elsewhere.'],
+      ['readability',['read','abil','ity'],['stem','aff','aff'],'Three morphemes.'],
+      ['chameleon',['cha','meleon'],['bad','bad'],'It cannot be segmented. It is one morpheme.']];
+     return D.map(([w,parts,kinds,desc])=>({name:w,lang:parts.join('-'),desc,
+       a:S(R([tw('w',w,'plain')],'one word')),
+       b:S(R(parts.map((p,i)=>tw('p'+i,p,kinds[i],{from:'w'})),parts.length>1&&kinds[0]!=='bad'?parts.length+' morphemes':'no meaningful parts'))}));})(),'Cut it up','Put it back')},
+  {type:'quiz',cap:'Check yourself.',qs:[Q.ms1,Q.ms2]}
+ ]},
+ {title:'Lexemes and word-forms',steps:[
+  {type:'stage',cap:'“Word” has three senses. Take <b>the dog saw the dogs</b>. Each occurrence in a text is a <b>word token</b>: five tokens.',
+   spec:S(R([tw('t0','the','plain'),tw('t1','dog','plain'),tw('t2','saw','plain'),tw('t3','the','plain'),tw('t4','dogs','plain')],'5 word tokens'))},
+  {type:'stage',cap:'The concrete words you can pronounce are <b>word-forms</b>. <i>The</i> occurs twice but is one word-form: four word-forms.',
+   spec:S(R([tw('t0','the','stem'),tw('t1','dog','stem'),tw('t2','saw','stem'),tw('t4','dogs','stem')],'4 word-forms'))},
+  {type:'stage',cap:'The abstract dictionary words are <b>lexemes</b> (often written in small capitals). <i>Dogs</i> belongs to DOG and <i>saw</i> to SEE: three lexemes.',
+   spec:S(R([tw('t0','THE','lex'),tw('t1','DOG','lex'),tw('t2','SEE','lex')],'3 lexemes'))},
+  {type:'stage',cap:'A lexeme is abstract and has no sound of its own. LIVE is just a label for the lexeme. Its word-forms are concrete. The set of word-forms is its <b>paradigm</b>.',
+   spec:S(R([tw('L','LIVE','lex')],'lexeme: abstract'),R([tw('a','live','plain'),tw('b','lives','plain'),tw('c','lived','plain'),tw('d','living','plain')],'word-forms: concrete (the paradigm)'))},
+  {type:'widget',cap:'A word-form is a lexeme <b>plus a set of grammatical functions</b>. Count the word-forms in two paradigms.',build:paradigmWidget},
+  {type:'stage',cap:'Other relations link <b>different lexemes</b>. A set of related lexemes is a <b>word family</b>. Each member gets its own dictionary entry.',
+   spec:S(R([tw('a','readable','lex'),tw('b','reader','lex'),tw('c','reread','lex')],'word family of READ'),R([tw('d','unreadable','lex'),tw('e','readability','lex')],''))},
+  {type:'stage',cap:'The two kinds of relation have names. <b>Inflection</b>: between the word-forms of a lexeme. <b>Derivation</b>: between the lexemes of a word family. <b>Compounding</b>, as in <i>firewood</i> (fire + wood), puts a lexeme in two families at once. Derivation and compounding are together <b>word formation</b>.',
+   spec:S(R([tl('mo','morphology','lex',4.6)],'morphological relationships'),R([tl('inf','inflection','stem',3.4),tl('wf','word formation','mod',5)],'word-form formation  ·  lexeme formation'),R([tl('de','derivation','aff',3.6),tl('cm','compounding','var',4)],'paradigms are inflection; families are derivation'))},
+  {type:'widget',cap:'Sort the relationship.',
+   build:box=>sort3Widget(box,[
+    ['live → lives','inf','Two word-forms of the lexeme LIVE.'],
+    ['read → reader','der','READER is a new lexeme with a new meaning.'],
+    ['island → islands','inf','Plural form of the same lexeme.'],
+    ['logic → logician','der','A new lexeme, and not predictable (not *logicist).'],
+    ['fire + wood → firewood','cmp','Two lexemes combine, so the new lexeme is in both families.'],
+    ['live → living','inf','Another word-form of LIVE.'],
+    ['logic → illogical','der','Different lexeme, with a new concept.']],
+    {inf:'Inflection',der:'Derivation',cmp:'Compounding'})},
+  {type:'quiz',cap:'Check yourself.',qs:[Q.lx1,Q.lx2,Q.lx3,Q.lx4]}
+ ]},
+ {title:'Affixes, bases, roots',steps:[
+  {type:'widget',cap:'<b>Affixes</b> are short morphemes with abstract meaning that cannot occur alone. They are named by position relative to the <b>base</b>.',
+   build:box=>labWidget(box,[
+    {name:'Suffix',lang:'Russian · case',desc:'<span class="w">ruk → ruk-a</span> ‘hand’ (nominative). A suffix <b>follows</b> the base.',
+     a:S(R(L('ruk','r'),'base')),b:S(R([...L('ruk','r'),tl('a','a','aff',1,{enter:'right'})],'suffix'))},
+    {name:'Prefix',lang:'Nahuatl · possessor',desc:'<span class="w">cal → no-cal</span> ‘my house’. A prefix <b>precedes</b> the base.',
+     a:S(R(L('cal','c'),'base')),b:S(R([tl('no','no','aff',1.4,{enter:'left'}),...L('cal','c')],'prefix'))},
+    {name:'Infix',lang:'Tagalog',desc:'<span class="w">sulat → s-um-ulat</span> ‘write’. An infix sits <b>inside</b> the base.',
+     a:S(R(L('sulat','s'),'base')),b:S(R((()=>{const l=L('sulat','s');return [l[0],tl('um','um','aff',1.6,{enter:'top'}),...l.slice(1)];})(),'infix'))},
+    {name:'Circumfix',lang:'German · participle',desc:'<span class="w">fahr → ge-fahr-en</span> ‘driven’. A circumfix goes on <b>both sides</b> of the base.',
+     a:S(R(L('fahr','f'),'base')),b:S(R([tl('ge','ge','aff',1.4,{enter:'left'}),...L('fahr','f'),tl('en','en','aff',1.4,{enter:'right'})],'circumfix'))}],
+    'Add the affix','Remove it')},
+  {type:'stage',cap:'Bases can be complex. The root <b>act</b> cannot be analysed further.',
+   spec:S(R([tw('act','act','stem')],'root: act'))},
+  {type:'stage',cap:'Add -ive: <b>act</b> is the base of -ive.',
+   spec:S(R([tw('act','act','stem'),tw('ive','ive','aff',{enter:'right'})],'active',[{id:'b1',from:0,to:1,lvl:1,label:'active'}]))},
+  {type:'stage',cap:'Add -ity: now <b>active</b> is the base of -ity, though it is not a root. “Base” is a relative notion; “root” is not.',
+   spec:S(R([tw('act','act','stem'),tw('ive','ive','aff'),tw('ity','ity','aff',{enter:'right'})],'activity',[{id:'b1',from:0,to:1,lvl:1,label:'base of -ity: active'},{id:'b2',from:0,to:2,lvl:2,label:'activity'}]))},
+  {type:'stage',cap:'A base may or may not be a word-form. English <b>cat</b> is both the base of cats and a word-form. In Italian, nouns must carry a number ending, so <b>gatt-</b> is a <b>bound stem</b>.',
+   spec:S(R([tw('e1','cat','ok'),tl('e2','s','aff',1)],'English cat-s: cat can stand alone'),R([tw('g1','gatt','bad'),tl('g2','o','aff',1)],'Italian gatt-o ‘cat’'),R([tw('g3','gatt','bad'),tl('g4','i','aff',1)],'gatt-i ‘cats’'))},
+  {type:'stage',cap:'The root/affix line is sometimes blurry. English <b>bio-</b> and <b>-crat</b> occur only in compounds, yet have concrete meanings and are not short. The book treats them as bound stems. (Bella Coola has body-part suffixes that are a similar borderline case.)',
+   spec:S(R([tw('a','bio','var'),tw('b','rhythm','stem')],'biorhythm'),R([tw('c','techno','var'),tw('d','crat','var')],'technocrat'))},
+  {type:'quiz',cap:'Check yourself.',qs:[Q.af1,Q.af2,Q.af3,Q.af4]}
+ ]},
+ {title:'Allomorphs',steps:[
+  {type:'widget',cap:'A single morpheme can have several shapes: <b>allomorphs</b>. The English plural is [s], [z] or [əz]. Which one appears depends on the final sound of the stem.',
+   build:box=>labWidget(box,(()=>{
+     const D=[['cat','[t] is a voiceless non-sibilant obstruent','s','s'],['dog','[g] is voiced, not a sibilant: “elsewhere”','z','z'],['face','[s] is a sibilant','əz','əz'],['bush','[ʃ] is a sibilant','əz','əz'],
+      ['book','[k] is a voiceless non-sibilant obstruent','s','s'],['bag','[g] is voiced: “elsewhere”','z','z'],['key','a vowel: “elsewhere”','z','z'],['church','[tʃ] is a sibilant','əz','əz']];
+     return D.map(([w,why,al,shown])=>({name:w,lang:'English plural of '+w,desc:`<span class="w">${w}</span>: ${why}, so the allomorph is <b>[${al}]</b>.`,
+       a:S(R([tw('w',w,'stem')],'base')),b:S(R([tw('w',w,'stem'),tl('al',shown,'aff',1.5,{enter:'right'})],'plural [-'+al+']'))}));})(),'Add the plural','Undo')},
+  {type:'widget',cap:'More allomorphs. Korean accusative has two (after a consonant or a vowel). Turkish ‘my’ has five, chosen by the stem’s final vowel or by a vowel ending.',
+   build:box=>labWidget(box,[
+    {name:'Korean ton',lang:'accusative · consonant-final',desc:'<span class="w">ton-ul</span> ‘money-acc’: <b>-ul</b> after a consonant.',a:S(R([tw('w','ton','stem')],'base')),b:S(R([tw('w','ton','stem'),tl('al','ul','aff',1.4,{enter:'right'})],'-ul'))},
+    {name:'Korean tali',lang:'accusative · vowel-final',desc:'<span class="w">tali-lul</span> ‘leg-acc’: <b>-lul</b> after a vowel.',a:S(R([tw('w','tali','stem')],'base')),b:S(R([tw('w','tali','stem'),tl('al','lul','aff',1.6,{enter:'right'})],'-lul'))},
+    {name:'Turkish ev',lang:'‘my’ · stem vowel e',desc:'<span class="w">ev-im</span> ‘my house’: <b>-im</b> (the same after i, as in dil-im).',a:S(R([tw('w','ev','stem')],'base')),b:S(R([tw('w','ev','stem'),tl('al','im','aff',1.4,{enter:'right'})],'-im'))},
+    {name:'Turkish köy',lang:'‘my’ · stem vowel ö',desc:'<span class="w">köy-üm</span> ‘my village’: <b>-üm</b> (also after ü, as in gün-üm).',a:S(R([tw('w','köy','stem')],'base')),b:S(R([tw('w','köy','stem'),tl('al','üm','aff',1.4,{enter:'right'})],'-üm'))},
+    {name:'Turkish yol',lang:'‘my’ · stem vowel o',desc:'<span class="w">yol-um</span> ‘my way’: <b>-um</b> (also after u, as in tuz-um).',a:S(R([tw('w','yol','stem')],'base')),b:S(R([tw('w','yol','stem'),tl('al','um','aff',1.4,{enter:'right'})],'-um'))},
+    {name:'Turkish ad',lang:'‘my’ · stem vowel a',desc:'<span class="w">ad-ım</span> ‘my name’: <b>-ım</b> (also after ı, as in kız-ım).',a:S(R([tw('w','ad','stem')],'base')),b:S(R([tw('w','ad','stem'),tl('al','ım','aff',1.4,{enter:'right'})],'-ım'))},
+    {name:'Turkish baba',lang:'‘my’ · vowel-final stem',desc:'<span class="w">baba-m</span> ‘my father’: just <b>-m</b> after a vowel.',a:S(R([tw('w','baba','stem')],'base')),b:S(R([tw('w','baba','stem'),tl('al','m','aff',1,{enter:'right'})],'-m'))}],
+    'Add the suffix','Undo')},
+  {type:'stage',cap:'Linguists often picture <b>one underlying form</b> that rules reshape. German: a voiced obstruent becomes voiceless in syllable-final position. Underlying <b>[taːg]</b> ‘day’.',
+   spec:S(R([tl('t','t','stem'),tl('a','aː','stem',1.3),tl('g','g','stem')],'underlying: [taːg]'))},
+  {type:'stage',cap:'The rule applies: the final g becomes k. The pronounced <b>surface</b> form is [taːk].',
+   spec:S(R([tl('t','t','stem'),tl('a','aː','stem',1.3),tl('g','k','mod')],'surface: [taːk]'))},
+  {type:'stage',cap:'In the plural [taːg-ə] the g is no longer syllable-final, so the rule does not apply. One underlying form, two surface shapes.',
+   spec:S(R([tl('t','t','stem'),tl('a','aː','stem',1.3),tl('g','g','stem'),tl('e','ə','aff',1,{enter:'right'})],'surface: [taːgə] ‘days’'))},
+  {type:'stage',cap:'Russian works similarly: o/e in the last stem syllable drops before a vowel-initial suffix. Underlying <b>zamok-i</b> ‘castles’…',
+   spec:S(R([...L('zam','z'),tl('zo','o','stem',1),tl('zk','k','stem',1),tl('zi','i','aff',1)],'underlying: zamok-i'))},
+  {type:'stage',cap:'…becomes <b>zamk-i</b>. In the singular <i>zamok</i> nothing follows the stem, so the rule does not apply.',
+   spec:S(R([...L('zam','z'),tl('zk','k','stem',1),tl('zi','i','aff',1)],'surface: zamk-i'))},
+  {type:'stage',cap:'Not all allomorphs look alike. <b>Suppletive</b> allomorphs differ in pronunciation. Strong suppletion shares nothing: go/wen-t, good/bett-er, Russian čelovek/ljud-i.',
+   spec:S(R([tw('a1','go','stem'),tw('a2','wen-t','var')],'English go → went'),R([tw('b1','good','stem'),tw('b2','bett-er','var')],'good → better'),R([tw('c1','čelovek','stem'),tw('c2','ljud-i','var')],'Russian ‘person’ → ‘people’'))},
+  {type:'widget',cap:'Phonological alternation or suppletion? The line is a <b>continuum</b>. Buy/bought sits in the middle: weak suppletion.',
+   build:box=>sort3Widget(box,[
+    ['[taːk] / [taːg-ə] ‘day’','ph','A pronunciation rule explains it.'],
+    ['zamok / zamk-i','ph','The o drops by a rule.'],
+    ['buy / bought','weak','Some similarity, but no phonological rule describes it.'],
+    ['catch / caught','weak','Some similarity, but no phonological rule describes it.'],
+    ['go / wen-t','strong','No similarity at all.'],
+    ['good / bett-er','strong','No similarity at all.']],
+    {ph:'Phonological',weak:'Weak suppletion',strong:'Strong suppletion'})},
+  {type:'widget',cap:'What <b>selects</b> the allomorph? Phonological context, morphological context (usually grammatical function), or the individual word.',
+   build:box=>sort3Widget(box,[
+    ['English plural [s] / [z] / [əz]','phon','The final sound of the stem decides.'],
+    ['Korean -ul (after C) / -lul (after V)','phon','The preceding sound decides.'],
+    ['Spanish ir / va- / fu- ‘go’','morph','The tense or aspect decides: infinitive and future ir, present va-, perfective past fu-.'],
+    ['Persian -an (human) / -ha (non-human)','lex','The nature of the base noun, here semantic, decides.'],
+    ['English past participle -en vs -ed','lex','Speakers must learn which verbs take which one.']],
+    {phon:'Phonological',morph:'Morphological',lex:'Lexical'})},
+  {type:'quiz',cap:'Check yourself.',qs:[Q.al1,Q.al2,Q.al3,Q.al4]}
+ ]},
+ {title:'Glosses',steps:[
+  {type:'widget',cap:'Appendix: reading <b>interlinear morpheme-by-morpheme glosses</b> (based on the Leipzig Glossing Rules).',build:glossRulesWidget},
+  {type:'widget',cap:'See each rule at work: tap an example, then add its gloss.',
+   build:box=>labWidget(box,(()=>{
+     const D=[
+      ['Tzutujil','compl-1sg-sleep','person and number written together as 1sg','<span class="w">x-in-wari</span> ‘I slept’. Hyphens match one-to-one.',[['x','compl','aff'],['in','1sg','aff'],['wari','sleep']]],
+      ['Japanese','bloom-caus-pst','hyphens separate morphemes','<span class="w">sak-ase-ta</span> ‘made to bloom’, as in <i>Taroo ga hana o migotoni sak-ase-ta</i>.',[['sak','bloom'],['ase','caus','aff'],['ta','pst','aff']]],
+      ['Latin','island-gen.pl','period: two meanings in one piece','<span class="w">insul-ārum</span> ‘of the islands’: one suffix, two meanings.',[['insul','island'],['ārum','gen.pl','aff']]],
+      ['Turkish','come.out-inf','period: a two-word translation','<span class="w">çık-mak</span> ‘to come out’: one element, a two-word translation.',[['çık','come.out'],['mak','inf','aff']]],
+      ['Albanian','fig.sg · fig.pl','period: cannot be segmented','<span class="w">fik → fiq</span> ‘fig(s)’: number is not a separate piece.',[['fik','fig.sg'],['fiq','fig.pl']]]];
+     return D.map(([n,lang,_,desc,cols])=>{const g=glossRows(cols);
+       return {name:n,lang:lang,desc,a:S(R(g.a,'example')),b:S(R(g.a,'example'),R(g.b,'gloss'))};});})(),'Add the gloss','Hide the gloss')},
+  {type:'quiz',cap:'Check yourself.',qs:[Q.gl1,Q.gl2,Q.gl3]}
+ ]},
+ {title:'Practice',steps:[
+  {type:'widget',cap:'Exercise 1: Somali plurals. Four allomorphs appear in the data. A hypothesis that fits all twelve words in the exercise is that the allomorph depends on the <b>shape of the stem</b>. (The exercise notes the real conditions are more complex.) Choose the plural allomorph.',
+   build:box=>sort3Widget(box,[
+    ['awowe → awowayaal','yaal','A stem ending in e: the e drops and -ayaal is added.'],
+    ['beed → beedad','aC','A one-syllable stem ending in a consonant: -a plus a copy of the last consonant.'],
+    ['miis → miisas','aC','A one-syllable consonant-final stem: -a plus a copy of the last consonant (s).'],
+    ['cashar → casharro','Co','A two-syllable consonant-final stem: the last consonant is doubled and o added.'],
+    ['shabeel → shabeello','Co','A two-syllable consonant-final stem: the last consonant is doubled and o added.'],
+    ['xidid → xididdo','Co','Same pattern as cashar: the d is doubled and o added.'],
+    ['ilmo → ilmooyin','ooyin','A stem ending in o: the o is replaced by -ooyin.'],
+    ['qado → qadooyin','ooyin','A stem ending in o: the o is replaced by -ooyin.'],
+    ['waraabe → waraabayaal','yaal','A stem ending in e: the e drops and -ayaal is added.']],
+    {aC:'-aC: a + copied last consonant',Co:'-Co: doubled consonant + o',yaal:'-ayaal (final e drops)',ooyin:'-ooyin (final o drops)'})},
+  {type:'widget',cap:'<b>Summary of Chapter 2.</b> Three notions of word: the <b>token</b>, the <b>lexeme</b> (abstract) and the <b>word-form</b> (concrete). <b>Inflection</b> relates the word-forms of a lexeme, <b>derivation</b> relates lexemes. Morphemes are <b>affixes</b> (short, abstract, bound) or <b>roots</b> (longer, concrete). Morphemes with several shapes have <b>allomorphs</b>, phonological or suppletive (strong or weak), conditioned by phonology, morphology or the individual word.',
+   build:box=>box.append(el('p','res','Next: Chapter 3 looks at morphological rules, where Definition 2 starts to strain.'))}
+ ]}
+];
+
+Lesson.start({label:'Chapter 2 · Basic concepts',sections:SECTIONS});
+</script>
+</body>
+</html>
