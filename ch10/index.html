@@ -1,1 +1,244 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>Chapter 10 · Morphophonology · Understanding Morphology</title>
+<link rel="stylesheet" href="../assets/lesson.css">
+</head>
+<body>
+<script src="../assets/lesson.js"></script>
+<script>
+const {el,seg,T,tl,R,S,chg,mark,strip,shuffle,Stage,app,quizWidget,labWidget,sort3Widget}=Lesson;
+const mq=(id,q,right,wrongs,w)=>({id,q,o:[right,...wrongs],a:0,w});
+const wd=s=>s.length*.58+1;
+const sm=t=>`<span style="font-size:16px;line-height:1.35;display:inline-block">${t}</span>`;
 
+/* ---------- Eight criteria (Table 10.1) ---------- */
+const CRIT=[
+ ['(i) Conditioning','Automatic alternations are conditioned only by phonology. Morphophonological ones have a morphological or lexical component.',
+  'German Final Devoicing: any syllable-final voiced obstruent.','English Trisyllabic Shortening: only with certain suffixes (globular, not globalize) and certain words (national, but not notional).'],
+ ['(ii) Phonetic coherence','Automatic alternations affect natural classes of sounds. Morphophonological ones may have lost that coherence.',
+  'Flapping affects all alveolar plosives.','The vowels of Trisyllabic Shortening, the consonants of Hebrew Spirantization and the results of German Umlaut are not natural classes.'],
+ ['(iii) Phonetic distance','Automatic alternants tend to differ in one feature only. Morphophonological alternants can be far apart.',
+  'Voiced versus voiceless: one feature.','English [iː]/[ɛ], Turkish [k]/Ø, Japanese h/b: wide distance, because later changes made the link opaque.'],
+ ['(iv) Derived environments','Automatic alternations hold everywhere. Morphophonological ones may apply only across a morpheme boundary.',
+  'German syllable-final obstruents are always voiceless, inside morphemes too.','Turkish k is deleted between vowels only in derived forms (sokak ‘street’ keeps its k). English vitamin keeps its long vowel before two syllables.'],
+ ['(v) Loanwords','Automatic alternations apply to loans and foreign names. Morphophonological ones need not.',
+  'German Madrid [t], Russian Mombása with [ɑ].','Turkish sitreptokok keeps its k, and Russian zero alternation never applies to baron/barony.'],
+ ['(vi) Speech style','Automatic alternations may be optional and sensitive to style. Morphophonological ones never are.',
+  'English Flapping may be suppressed in slow, formal speech.','German Umlaut is not affected by speech style. (Obligatoriness alone is a poor diagnostic: most automatic rules are obligatory too.)'],
+ ['(vii) New segments','Automatic alternations may create sounds found nowhere else. Morphophonological ones give sounds that exist independently (structure preservation).',
+  'English [ɾ] occurs only through Flapping; Russian [ə] only through Akanie.','German ö and ü also occur in öde and Mühle; Hebrew f, v, x occur in basic words.'],
+ ['(viii) Word boundaries','Automatic alternations may apply across words. Morphophonological ones generally do not.',
+  'Flapping in a lot of stuff [ə lɒɾ əv stʌf].','Umlaut and Spirantization stay inside the word.']
+];
+function critWidget(box){
+  const chips=el('div','chips'),res=el('div','res'),a=el('div','res good'),b=el('div','res');box.append(chips,res,a,b);
+  CRIT.forEach((c,i)=>{const k=el('button','chip',c[0]);k.onclick=()=>{[...chips.children].forEach(x=>x.classList.remove('on'));k.classList.add('on','done');
+    res.innerHTML=`<b>${c[1]}</b>`;a.innerHTML=`<small>Automatic</small><br>${c[2]}`;b.innerHTML=`<small>Morphophonological</small><br>${c[3]}`;};chips.append(k);});
+  chips.children[0].click();
+}
+
+/* ---------- Productivity classes ---------- */
+const PROD=[
+ {name:'Spanish ie/e',lang:'Common alternation · not productive',desc:`<span class="w">cuerpo → cuerpito</span>. A diphthong in the base is simply kept. A novel verb from <i>hueso</i> is <i>deshuesar</i> (not *deshosar), and from a monophthong stem, <i>filosofar</i> has no *filosuéfo. Many verbs alternate, but novel words do not.`,
+  a:S(R([tl('b','cuerpo','stem',3.4)],'base ‘body’')),b:S(R([tl('b','cuerp','stem',3,{sub:'ue'}),tl('s','ito','aff',1.8,{enter:'right'})],'cuerpito: ue is kept, not *corpito'))},
+ {name:'German Umlaut',lang:'Productive in one pattern',desc:`<span class="w">Fax → Fäxchen</span>. Diminutives in -chen and -lein require Umlaut, even for brand-new words (parents may say <i>Vitaminölchen</i>). But a new plural or a new female noun does not umlaut: Luchsin, not *Lüchsin.`,
+  a:S(R(T('Fax','f'),'base ‘fax’')),b:S(R([tl('f0','F','stem',1),tl('f1','ä','mod',1,{from:'f1'}),tl('f2','x','stem',1),tl('s','chen','aff',2.6,{enter:'right'})],'Fäxchen'))},
+ {name:'Polish 2nd Palatalization',lang:'Productive · applies to loanwords',desc:`<span class="w">alpaka → alpace</span>. In the locative of a-declension nouns, k, g, ch become c, dz, sz. It applies to every loanword: Braga → Bradze, alpaka → alpace.`,
+  a:S(R([tl('a','alpak','stem',3),tl('b','a','aff',1)],'alpaka ‘alpaca’ (nominative)')),b:S(R([tl('a','alpa','stem',2.6),tl('b','c','mod',1,{from:'a'}),tl('c','e','aff',1)],'alpace (locative)'))},
+ {name:'Indonesian nasal subst.',lang:'Productive · now weakening',desc:`<span class="w">meng + kritik → mengritik</span>. The initial voiceless stop of the root becomes a nasal. Loanwords follow it (mengritik, menyukseskan, memrotes), but recent loans often keep the consonant (mengkritik), a sign that productivity is fading.`,
+  a:S(R([tl('m','meng','aff',2),tl('k','kritik','stem',3.4)],'prefix + root')),b:S(R([tl('m','meng','aff',2),tl('k','ritik','stem',3,{sub:'k lost'})],'mengritik: the k is replaced by the nasal ng'))},
+ {name:'German s/r',lang:'Relic alternation',desc:`<span class="w">lesen · las · gelesen</span>. Old High German <i>lesan / las / lārum / gilesan</i> had r in the plural past and the participle. Almost every verb has been levelled. It survives in <i>war/gewesen</i> and <i>Frost/frieren</i>, where only a historian sees a rule.`,
+  a:S(R([tl('l','lasen','stem',3),tl('p','ge-lesen','stem',3.6)],'modern German: levelled, no r')),b:S(R([tl('l','lārum','mod',3),tl('p','gi-leran','mod',3.6)],'Old High German: s → r'))}
+];
+
+/* ---------- Zulu ---------- */
+const ZULU=[
+ {name:'gubha',lang:'Where the sound change applies',desc:`<span class="w">gubh-a → guj-w-a</span> ‘hollow’ → ‘be hollowed’. Before passive -w, the labial bh becomes j. Originally this was automatic: wherever a labial met w, it palatalized.`,
+  a:S(R([tl('r','gubh','stem',2.6),tl('a','a','aff',1)],'active')),b:S(R([tl('r','guj','mod',2.6,{from:'r'}),tl('w','w','aff',1,{enter:'right'}),tl('a','a','aff',1)],'passive'))},
+ {name:'lama',lang:'Where the sound change applies',desc:`<span class="w">lum-a → luny-w-a</span> ‘bite’ → ‘be bitten’. The labial m becomes ny.`,
+  a:S(R([tl('r','lum','stem',2),tl('a','a','aff',1)],'active')),b:S(R([tl('r','luny','mod',2.6,{from:'r'}),tl('w','w','aff',1,{enter:'right'}),tl('a','a','aff',1)],'passive'))},
+ {name:'khumbula',lang:'Where it should NOT apply, yet does',desc:`<span class="w">khumbul-a → khunjul-w-a</span> ‘remember’. The b is followed by -ul-, which would have protected it from the sound change. Zulu speakers extended the palatal to this word, so the alternation now signals the passive: it is morphologically conditioned.`,
+  a:S(R([tl('r','khumbul','stem',4),tl('a','a','aff',1)],'active')),b:S(R([tl('r','khunjul','mod',4.4,{from:'r'}),tl('w','w','aff',1,{enter:'right'}),tl('a','a','aff',1)],'passive'))},
+ {name:'bophela',lang:'Where it should NOT apply, yet does',desc:`<span class="w">bophel-a → boshel-w-a</span> ‘harness’. Again the root-final labial is not next to w, so a pure sound change could not have produced sh here.`,
+  a:S(R([tl('r','bophel','stem',3.6),tl('a','a','aff',1)],'active')),b:S(R([tl('r','boshel','mod',3.6,{from:'r'}),tl('w','w','aff',1,{enter:'right'}),tl('a','a','aff',1)],'passive'))}
+];
+
+/* ---------- Integrated vs neutral ---------- */
+const AFFS=[
+ ['-ity','int','Level I. Shifts stress (réal → reálity) and triggers Trisyllabic Shortening (divine → divinity).'],
+ ['-ness','neu','Level II. Never shifts stress: nátural → náturalness.'],
+ ['in-','int','Level I. Its n assimilates: inelegant, but illiterate, irregular.'],
+ ['un-','neu','Level II. Its n is always kept: unlimited, unrealistic.'],
+ ['-ical','int','Level I. It sits close to the root and can shift stress.'],
+ ['-ful','neu','Level II. It makes clusters impossible inside a morpheme: hopeful [pf], thankful [kf].'],
+ ['-ian','int','Level I. Stress shifts: cómedy → comédian.'],
+ ['-able','neu','Level II. No stress shift: accómpany → accómpaniable.'],
+ ['-ous','int','Level I. Stress shifts: advántage → advantágeous.'],
+ ['-ize','neu','Level II (the book’s classification), though it triggers Velar Softening: public → publicize. A known counterexample.']
+];
+function affWidget(box){
+  const items=shuffle(AFFS).map(a=>[a[0],a[1],a[2]]);
+  sort3Widget(box,items,{int:'Integrated (level I)',neu:'Neutral (level II)'});
+}
+
+/* ---------- Level ordering derivations ---------- */
+const LEVEL=[
+ {name:'national',lang:'Level I only',desc:`<span class="w">nation → national</span>. The level I suffix -al is added, then Trisyllabic Shortening makes the a short: [næʃnəl].`,
+  a:S(R([tl('r','nation','stem',3.6)],'root [ˈneɪʃn]')),b:S(R([tl('r','nation','stem',3.6,{sub:'short a'}),tl('s','al','aff',1.6,{enter:'right'})],'level I: -al, then shortening → [ˈnæʃnəl]'))},
+ {name:'acidity',lang:'Level I only',desc:`<span class="w">acid → acidity</span>. -ity is level I, so it pulls the stress onto the second syllable (acídity), as integrated suffixes often do.`,
+  a:S(R([tl('r','acid','stem',2.6)],'root')),b:S(R([tl('r','acid','stem',2.6),tl('s','ity','aff',1.8,{enter:'right'})],'level I: stress moves to the second syllable'))},
+ {name:'debatable',lang:'Level II',desc:`<span class="w">debate → debatable</span>. -able is level II. Shortening applies only at level I, so the conditions arrive too late and the vowel stays long, though the surface shape would qualify.`,
+  a:S(R([tl('r','debate','stem',3.4)],'root')),b:S(R([tl('r','debate','stem',3.4),tl('s','able','aff',2,{enter:'right'})],'level II: no shortening, flapping applies'))},
+ {name:'creativeness',lang:'Level I, then level II',desc:`<span class="w">create → creative → creativeness</span>. -ive first (level I), then -ness (level II). The order is allowed. The reverse is predicted to be impossible.`,
+  a:S(R([tl('r','create','stem',3.2),tl('s','ive','aff',1.6)],'level I: create + -ive')),b:S(R([tl('r','create','stem',3.2),tl('s','ive','aff',1.6),tl('n','ness','aff',2,{enter:'right'})],'level II: + -ness'))},
+ {name:'readability',lang:'Counterexample',desc:`<span class="w">read → readable → readability</span>. Level I -ity attaches to level II -able, which level ordering forbids. Likewise -ize + -ation: realization.`,
+  a:S(R([tl('r','read','stem',2),tl('s','able','aff',1.8)],'level II first')),b:S(R([tl('r','read','stem',2),tl('s','abil','aff',1.8),tl('n','ity','aff',1.6,{enter:'right'})],'then level I: should be impossible'))}
+];
+
+/* ---------- Polish backformation ---------- */
+const POL=[
+ {name:'broszka',lang:'Back-formation · Polish',desc:`<span class="w">broszka → brocha</span> ‘brooch’ → ‘big brooch’. The base ends in -szka, borrowed from French, so there was never an original ch. The new ch/k shows the alternation running backwards, as morphological rules can.`,
+  a:S(R([tl('r','bro','stem',1.8),tl('s','szka','mod',2.6)],'diminutive-looking base')),b:S(R([tl('r','bro','stem',1.8),tl('s','cha','mod',2,{from:'s'})],'augmentative: sz → ch'))},
+ {name:'beczka',lang:'Back-formation · Polish',desc:`<span class="w">beczka → beka</span> ‘barrel’ → ‘big barrel’. Here cz goes back to k.`,
+  a:S(R([tl('r','be','stem',1.2),tl('s','czka','mod',2.6)],'base')),b:S(R([tl('r','be','stem',1.2),tl('s','ka','mod',1.8,{from:'s'})],'augmentative: cz → k'))},
+ {name:'gruszka',lang:'Back-formation · Polish',desc:`<span class="w">gruszka → grucha</span> ‘pear’ → ‘big pear’. Gruszka was derived from <i>grusza</i> ‘pear tree’, so its sz is original, and the speakers still extend the pattern.`,
+  a:S(R([tl('r','gru','stem',1.8),tl('s','szka','mod',2.6)],'base')),b:S(R([tl('r','gru','stem',1.8),tl('s','cha','mod',2,{from:'s'})],'augmentative: sz → ch'))}
+];
+const IRISH=[
+ {name:'molaim',lang:'Modern Irish Lenition',desc:`<span class="w">molaim → mhol mé</span> ‘I praise / I praised’. The old past prefix do- is gone. Only the lenition of the first consonant (m → mh) marks the past.`,
+  a:S(R([tl('r','molaim','stem',3.6)],'present')),b:S(R([tl('r','mhol mé','mod',3.8,{from:'r'})],'past: lenition is the sole marker'))},
+ {name:'brisim',lang:'Modern Irish Lenition',desc:`<span class="w">brisim → bhris mé</span> ‘I break / I broke’. Same pattern: b → bh.`,
+  a:S(R([tl('r','brisim','stem',3.4)],'present')),b:S(R([tl('r','bhris mé','mod',4,{from:'r'})],'past: b → bh'))},
+ {name:'sábhálaim',lang:'Modern Irish Lenition',desc:`<span class="w">sábhálaim → shábháil mé</span> ‘I save / I saved’. Here s → sh.`,
+  a:S(R([tl('r','sábhálaim','stem',4.6)],'present')),b:S(R([tl('r','shábháil mé','mod',5.6,{from:'r'})],'past: s → sh'))}
+];
+
+/* ---------- Exercise 3 ---------- */
+const EX3=[
+ ['Hausa: t, d, s, z palatalize before an original front vowel','mp','New ee and i from later sound changes and loans such as teebur and laasiisìi do not palatalize. Only the original vowel triggers it (my analysis).'],
+ ['Spanish: b, d, g become [β ð ɣ] after a vowel or fricative','auto','It crosses word boundaries (el dedo, los dedos; viene Damiano) and depends only on the sounds around it (my analysis).'],
+ ['Greek: velars become palatals before [e] and [i]','auto','It is purely phonological, and it applies to loanwords too (my analysis).'],
+ ['Polish: o/ó in certain forms, with many exceptions including non-loans','mp','Conditioned by the morphological form, and with lexical exceptions (spor, kod, wódeczka): a morphophonological alternation (my analysis).']
+];
+function ex3Widget(box){sort3Widget(box,EX3.map(x=>[sm(x[0]),x[1],x[2]]),{auto:'Automatic',mp:'Morphophonological'});}
+
+/* ---------- Alternations sorter ---------- */
+function altSort(box){
+  const D=[
+   ['German Final Devoicing (Tag [taːk] / Tage)','auto','Purely phonological and phonetically natural: any syllable-final voiced obstruent.'],
+   ['English Trisyllabic Shortening (divine / divinity)','mp','Only with certain suffixes and words (national, not notional), and the vowels do not form a natural class.'],
+   ['Russian Akanie (unstressed o → [ɑ] or [ə])','auto','Depends only on stress position, applies to loans (Mombása) and creates a sound found nowhere else.'],
+   ['German Umlaut (Buch / Bücher)','mp','Its original trigger is gone. Now it depends on the suffix and, for -e plurals, on the individual word (Hunde, but Bünde).'],
+   ['Hebrew Spirantization (kotev / yi-xtov)','mp','Many verbs resist it (kocer / yikcor), and f, v, x exist independently in the language.'],
+   ['Japanese Palatalization (kas-e / kash-i)','auto','t and s become palatals before [i]: one feature, always, and loans such as shiizun ‘season’ follow it.'],
+   ['Turkish k/ğ (inek / ineğ-i)','mp','Only in derived forms (sokak keeps k), and loans may keep k (sitreptokok).'],
+   ['English Flapping (pat / patting)','auto','Optional in formal speech, creates [ɾ], and works across words (a lot of stuff).']
+  ];
+  sort3Widget(box,D.map(x=>[sm(x[0]),x[1],x[2]]),{auto:'Automatic',mp:'Morphophonological'});
+}
+
+/* ---------- Summary ---------- */
+function summaryWidget(box){
+  box.append(el('ul','pts',`
+   <li><b>Two kinds of alternation:</b> automatic (purely phonological, phonetically natural, applies to loans, can be optional and cross word boundaries) and morphophonological (morphologically or lexically conditioned, opaque, word-internal).</li>
+   <li>Morphophonological alternations vary in <b>productivity</b>: relic, common and productive.</li>
+   <li><b>Diachrony:</b> sound change → automatic alternation → morphophonological alternation, once speakers reanalyse the alternant as part of the word or the pattern (Jüdin, Zulu passive).</li>
+   <li><b>As phonology:</b> level ordering links integrated (level I) and neutral (level II) affixes to rule blocks, but has real counterexamples (readability, realization, publicize) and a simpler rival in limited productivity and saliency.</li>
+   <li><b>As morphology:</b> productivity gradients, back-formation, and alternations that become the sole marker (Irish lenition) are typical of morphology. Morphology-sensitive phonotactics keeps the question open.</li>`));
+  let tot=0,good=0;const rows=[];
+  SECTIONS.forEach(s=>{let n=0,g=0;s.steps.forEach(st=>{if(st.type==='quiz')st.qs.forEach(q=>{n++;if(app.score[q.id])g++;});});
+    if(n){tot+=n;good+=g;rows.push(`<li>${s.title}: <b>${g}/${n}</b></li>`);}});
+  box.append(el('p','res',`<b>Quiz results (first try): ${good} of ${tot}</b><ul class="pts">${rows.join('')}</ul>`));
+}
+
+/* ---------- Quizzes ---------- */
+const Q={
+ a1:mq('a1','German Final Devoicing is called a process, but the book says this is…','Metaphorical: speakers’ knowledge need not include a literal devoicing step',['A literal mental operation','Only a historical event','A rule of morphology'],'Process terms are convenient because they show which pattern is expected (k in Volk and Völker) and which is not (g in final position).'),
+ a2:mq('a2','Why is German Umlaut a morphophonological alternation today?','Its original front-vowel trigger is gone, so it now depends on suffixes and individual words',['It is conditioned by the next sound','It applies to every back vowel','It creates sounds found nowhere else'],'Old High German apful/epfili lost the [i], and in Modern German Hund/Hunde versus Bund/Bünde must be learned word by word.'),
+ a3:mq('a3','Which diagnostic points to an automatic alternation?','It applies to loanwords and may be optional in formal speech',['It is restricted to derived environments','It never crosses a word boundary','Its alternants are phonetically distant'],'Automatic alternations are phonetically natural and keep working when new material enters the language.'),
+ a4:mq('a4','Why is obligatoriness a poor diagnostic?','Most automatic alternations in grammars are obligatory as well',['Morphophonological ones are always optional','Automatic ones are never obligatory','It only applies to vowels'],'Optionality or style sensitivity points to an automatic rule, but obligatoriness proves nothing either way.'),
+ p1:mq('p1','Spanish deshuesar keeps its diphthong, and filosofar has no *filosuéfo. What does this show about Diphthongization?','It is common, but not productive',['It is a relic alternation','It is fully productive','It is purely automatic'],'Many verbs alternate, so linguists want a rule, but novel words do not take part.'),
+ p2:mq('p2','German Umlaut is productive in which pattern?','Diminutives in -chen and -lein, even for new words (Fäxchen)',['New plurals','New female nouns in -in','All of the above'],'A new female noun would be Luchsin, not *Lüchsin, and plural Umlaut is no longer productive.'),
+ p3:mq('p3','Polish Second Palatalization applying to Braga and alpaka shows that it is…','Productive: it applies to loanwords',['A relic alternation','Automatic','Optional'],'Applying to every loanword is the clearest sign of productivity here.'),
+ d1:mq('d1','In the book’s account, how does an automatic alternation become morphophonological?','A sound change makes it automatic, then speakers reanalyse it as part of the morphology',['Phonology absorbs the morphology','Morphology creates the sound change','Loanwords add it'],'The reanalysis stays hidden until the phonological condition is lost (Jüdin kept its ü after u-i sequences became pronounceable).'),
+ d2:mq('d2','Zulu khumbul-a → khunjul-w-a ‘be remembered’ shows reanalysis because…','The b is not next to w, so a sound change alone could not have palatalized it',['The verb is a loanword','The passive is optional','Palatalization is a relic'],'Speakers introduced the palatal as a co-signal of the passive into words that could not have developed it phonologically.'),
+ d3:mq('d3','If speakers derived Jüdin from [juːdin] by a rule each time, losing the rule should…','Cause the pronunciation to revert, which did not happen, so the surface form was probably stored',['Make Jüdin vanish','Make Jude become Jüde','Change nothing in theory'],'The retention suggests speakers stored the form or the two stem allomorphs [jud-] and [jüd-].'),
+ l1:mq('l1','Which pair shows an integrated and a neutral affix in English?','-ity (integrated), -ness (neutral)',['-ness (integrated), -ity (neutral)','-ful and un- (both integrated)','-ity and in- (both neutral)'],'Integrated affixes can shift stress and trigger shortening. Neutral ones never do.'),
+ l2:mq('l2','Why can’t level ordering easily explain readability?','-ity is level I, but it follows the level II suffix -able',['-ity is a prefix','Readability is a loan','-able is level I'],'The predicted ordering is violated, and so is realization (-ation after -ize).'),
+ l3:mq('l3','What is the book’s alternative explanation for the ordering of English affixes?','Integrated affixes are mostly unproductive borrowings, and a stem plus integrated affix tends to be stored as one unit',['Phonology blocks them','They are all prefixes','Speakers never learned them'],'Limited productivity and morpheme boundary saliency (Hay and Plag) explain much of the ordering without level ordering.'),
+ l4:mq('l4','Why is the Lezgian word tip-di recognisable as complex?','The cluster pd is impossible inside a single morpheme',['It has stress on the second syllable','It follows vowel harmony','It ends in a consonant'],'Neutral suffixes can break morpheme-internal phonotactics and are not subject to the alternations.'),
+ m1:mq('m1','Polish broszka → brocha shows that morphophonological alternations can…','Run in reverse, as morphological rules do',['Only apply to loanwords','Never be productive','Create new suffixes'],'The ch/k was never in the base, so speakers built it by an alternation that behaves like a morphological rule.'),
+ m2:mq('m2','In Modern Irish, the past tense of molaim is mhol mé. The past is marked by…','Lenition of the first consonant alone, since the prefix do- was lost',['A past suffix','Stress shift','Reduplication'],'This is a base modification pattern, like German plural Umlaut (Mutter/Mütter).'),
+ m3:mq('m3','Which finding keeps the question of morphophonology open?','Phonotactic constraints can be sensitive to morpheme boundaries',['Automatic alternations are obligatory','Umlaut is word-internal','Loans keep their stems'],'Because phonotactics is core phonology, some morphology-sensitive phonology might exist.'),
+ x1:mq('x1','Exercise 1: is the voicing alternation in leaf/leaves, knife/knives, house/houses automatic or morphophonological?','Morphophonological: it appears only in particular words and the plural (roofs, chiefs, cliffs do not take part)',['Automatic, since f and v are close','Automatic, since it applies to all fricatives','A relic alternation only'],'This is my analysis. A purely phonological rule could not leave out roof/roofs, and it needs the plural.'),
+ x2:mq('x2','Exercise 2: young/younger [jʌŋ]/[jʌŋgər]. Which class?','Relic: it affects only a handful of words (young, long, strong) and is tied to the comparative',['Productive','Common','Automatic'],'This is my analysis. A new adjective such as *hung would not take it, and only a few words show it.'),
+ x4:mq('x4','Exercise 4: what else supports Zulu Labial Palatalization being morphophonological?','Its set of sounds is not phonetically coherent, and it was extended to words where the sound change could not apply',['It applies in all contexts','It creates new sounds','It affects loanwords'],'My analysis: m → ny and ph → sh differ by more than one feature, and the extension in khumbul-a shows morphological conditioning.')
+};
+
+const SECTIONS=[
+{title:'Two kinds of alternations',steps:[
+ {type:'stage',cap:`Morphemes change shape with their surroundings. The relation between such <b>phonological allomorphs</b> is called an <b>alternation</b>. German Tag is [taːk], but Tage is [taːgə]: a final g is pronounced k.`,
+  spec:S(R([tl('a','Tage','stem',3.2),tl('b','[taːgə]','plain',4.2)],'in front of a vowel'),R([tl('c','Tag','stem',2.4,{from:'a'}),tl('d','[taːk]','plain',3.2)],'syllable-final: g → k'))},
+ {type:'stage',cap:`Alternations come in two kinds. <b>Automatic</b> ones are purely phonological, like German Final Devoicing. <b>Morphophonological</b> ones have a morphological or lexical condition, like English Trisyllabic Shortening.`,
+  spec:S(R([tl('a','automatic','stem',3.8),tl('b','phonology only','plain',5.2)],''),R([tl('c','morpho-phonological','mod',5.2),tl('d','also morphology','plain',5)],''))},
+ {type:'stage',cap:`Shortening needs particular suffixes. <b>Divine → divinity</b> shortens, but <b>divine → divineness</b> does not. And it needs particular words: <b>national</b> shortens, <b>notional</b> does not.`,
+  spec:S(R([tl('a','divine','stem',3.2),tl('b','-ity','aff',1.8,{enter:'right'}),tl('c','divinity','ok',3.8)],'integrated suffix: [aɪ] → [ɪ]'),R([tl('d','divine','stem',3.2),tl('e','-ness','aff',2,{enter:'right'}),tl('f','divineness','bad',4.6)],'neutral suffix: vowel stays long'))},
+ {type:'widget',cap:`Eight empirical criteria separate the two types (Table 10.1). Tap each: the first box is automatic, the second morphophonological.`,build:critWidget},
+ {type:'widget',cap:`Sort eight real alternations using what you have just seen.`,build:altSort},
+ {type:'quiz',cap:'Check yourself.',qs:[Q.a1,Q.a2,Q.a3,Q.a4]}
+]},
+{title:'Productivity of alternations',steps:[
+ {type:'stage',cap:`Morphophonological alternations form a continuum. <b>Relic</b> alternations occur in a few words and are probably not recognised by speakers. <b>Common</b> ones occur in many words but do not extend to new ones. <b>Productive</b> ones extend to neologisms and loanwords.`,
+  spec:S(R([tl('a','relic','stem',2.4),tl('b','few words','plain',3.6)],'no novel words'),R([tl('c','common','aff',2.8),tl('d','many words','plain',3.8)],'no novel words'),R([tl('e','productive','ok',3.6),tl('f','novel words','plain',4.2)],'applies to new words'))},
+ {type:'widget',cap:`Test each alternation against new and borrowed words. Automatic alternations always pass this test, so only morphophonological ones differ.`,build:b=>labWidget(b,PROD,'Show the pattern','Back')},
+ {type:'quiz',cap:'Check yourself.',qs:[Q.p1,Q.p2,Q.p3]}
+]},
+{title:'Diachrony',steps:[
+ {type:'stage',cap:`Sound change always creates <b>automatic</b> alternations first. Phonetics and phonology work blindly: Hebrew Spirantization turned intervocalic p into f in every word, alternating or not.`,
+  spec:S(R([tl('a','sound change','stem',4.2),tl('b','→','op',.8),tl('c','automatic','ok',3.2),tl('d','→','op',.8),tl('e','morphophonological','mod',5.6)],''))},
+ {type:'stage',cap:`Old High German: Jüdin had to be pronounced with ü, because a back vowel before an i in the next syllable was assimilated. Umlaut was fully automatic.`,
+  spec:S(R([tl('a','Jude','stem',3),tl('b','-in','aff',1.6,{enter:'right'})],'Jude + -in'),R([tl('c','Jüdin','ok',3.2,{from:'a'})],'u-i sequence: the u has to shift'))},
+ {type:'stage',cap:`Later the condition vanished: Luchsin ‘female lynx’ (u before -in) became possible. Yet Jüdin did not revert to Judin. Speakers had reanalysed ü as a property of the word or the pattern.`,
+  spec:S(R([tl('a','Luchs','stem',3),tl('b','-in','aff',1.6)],'Middle High German: no longer a problem'),R([tl('c','Jüdin','mod',3.2),tl('d','stayed','plain',2.6)],'the ü was kept'))},
+ {type:'widget',cap:`Zulu shows the same reanalysis. In the passive, a labial before -w palatalizes. See what happens when the alternation spreads to words that sound change could not have reached.`,build:b=>labWidget(b,ZULU,'Make the passive','Back')},
+ {type:'quiz',cap:'Check yourself.',qs:[Q.d1,Q.d2,Q.d3]}
+]},
+{title:'Morphophonology as phonology',steps:[
+ {type:'stage',cap:`One view treats <b>both</b> kinds of alternation as phonology, triggered by affixation. Its flagship is <b>level ordering</b>, which starts from two types of affix.`,
+  spec:S(R([tl('a','integrated','stem',4),tl('b','neutral','aff',3)],'two kinds of affix'))},
+ {type:'stage',cap:`In Lezgian, integrated suffixes are inside the stress domain and trigger alternations. Neutral suffixes are outside it: <b>típ-di</b> is stressed on the first syllable, and shows pd, a cluster impossible inside a morpheme.`,
+  spec:S(R([tl('a','q’al','stem',2.2),tl('b','-ár','aff',1.6,{enter:'right'})],'integrated: stress lands on the suffix'),R([tl('c','típ','stem',2.2),tl('d','-di','aff',1.6,{enter:'right'})],'neutral: stress stays, pd is exposed'))},
+ {type:'widget',cap:`English has the same split. Is each affix integrated (level I) or neutral (level II)?`,build:affWidget},
+ {type:'stage',cap:`Level ordering says level I comes first, and each level has its own rules. National: level I -al, then Trisyllabic Shortening. Debatable: -able is level II, so shortening is never triggered.`,
+  spec:S(R([tl('a','root','plain',2),tl('b','→','op',.8),tl('c','level I','stem',2.6),tl('d','→','op',.8),tl('e','level II','aff',2.6)],'derivation in order'))},
+ {type:'widget',cap:`Five derivations. Watch where level ordering succeeds and where it fails.`,build:b=>labWidget(b,LEVEL,'Add the suffix','Back')},
+ {type:'stage',cap:`Problems pile up. Level I -ity attaches to level II -able (readability), and -ation to -ize (realization). Level II -ize and -ism still trigger Velar Softening (publicize, fanaticism). In- and un- stress alike.`,
+  spec:S(R([tl('a','readability','bad',5.6)],'level I after level II'),R([tl('b','publicize','bad',4.6)],'level II, yet it triggers softening'))},
+ {type:'stage',cap:`And there is a simpler explanation. Most integrated affixes came with French and Latin words and are not productive anyway. A stem plus an integrated affix is also stored as one unit, so it sits closest to the root.`,
+  spec:S(R([tl('a','limited productivity','stem',6.4)],''),R([tl('b','+ lexical storage','aff',5.6)],'explains the ordering without levels'))},
+ {type:'quiz',cap:'Check yourself.',qs:[Q.l1,Q.l2,Q.l3,Q.l4]}
+]},
+{title:'Morphophonology as morphology',steps:[
+ {type:'stage',cap:`The rival view puts morphophonological alternations in <b>morphology</b>. They act like morphological patterns: they vary in productivity, and they can mark meaning, even by themselves.`,
+  spec:S(R([tl('a','automatic','ok',3.4),tl('b','phonology','plain',3.2)],''),R([tl('c','morphophonological','mod',5.6),tl('d','morphology','plain',3.4)],'on this view'))},
+ {type:'widget',cap:`Back-formation. Polish makes augmentatives by cutting -ek and -ka. Applied to -szka and -czka words, the result has a new ch or k. The alternation runs backwards, as a morphological rule would.`,build:b=>labWidget(b,POL,'Form the augmentative','Back')},
+ {type:'widget',cap:`Sole marker. When Irish lost the past prefix, the lenition it caused was left to mark the past alone.`,build:b=>labWidget(b,IRISH,'Form the past','Back')},
+ {type:'stage',cap:`The case is not closed. If non-concatenative operations are needed anyway, positing alternations in morphology costs little. But phonotactics can be sensitive to morpheme boundaries (pd in tip-di, ksts in text-s), so some phonology may be morphology-sensitive after all.`,
+  spec:S(R([tl('a','tip-di','plain',3.2),tl('b','pd','bad',1.6)],'impossible inside a morpheme'),R([tl('c','text-s','plain',3.4),tl('d','ksts','bad',2)],'also exposed by affixation'))},
+ {type:'quiz',cap:'Check yourself.',qs:[Q.m1,Q.m2,Q.m3]}
+]},
+{title:'Exercises',steps:[
+ {type:'quiz',cap:`Questions based on the comprehension exercises. The book gives no answer key, so the explanations are my analysis.`,qs:[Q.x1,Q.x2,Q.x4]},
+ {type:'widget',cap:`Exercise 3: automatic or morphophonological? Four alternations with the information given in the book.`,build:ex3Widget},
+ {type:'widget',cap:`That is chapter 10. Here is what to take away.`,build:summaryWidget}
+]}
+];
+
+Lesson.start({label:'Chapter 10 · Morphophonology',sections:SECTIONS});
+</script>
+</body>
+</html>
